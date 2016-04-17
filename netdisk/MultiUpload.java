@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.concurrent.locks.*;
@@ -14,7 +14,7 @@ import java.util.concurrent.locks.*;
  *
  * @author 杨德中
  */
-public class MultiUpload implements Runnable
+class MUImplementation implements Runnable
 {
     String [] local_path = null;
     String [] path = null;
@@ -22,7 +22,7 @@ public class MultiUpload implements Runnable
     int cnt = 0;
     Vdisk vd;
     Lock lock = new ReentrantLock();
-    public MultiUpload(String[]local_path, String[]path , Vdisk vd, String access_token)
+    public MUImplementation(String[]local_path, String[]path , Vdisk vd)
     {
         this.local_path = local_path;
         this.path = path;
@@ -62,4 +62,44 @@ public class MultiUpload implements Runnable
     //    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
+}
+
+public class MultiUpload 
+{
+    int ThreadNum = 3;
+    String [] local_path = null;
+    String [] path = null;
+    Vdisk vd = new Vdisk();
+    String access_token = null;
+    public MultiUpload(int ThreadNum, String[]local_path, String[]path, String access_token)
+    {
+        if(ThreadNum > 0)
+            this.ThreadNum = ThreadNum;
+        if(access_token == null)
+            vd.get_access_token();
+        else
+            vd.access_token = access_token;
+        this.local_path = local_path;
+        this.path = path;
+    }
+    void start()
+    {
+        MUImplementation mt = new MUImplementation(this.local_path, this.path, vd);
+        Vector<Thread> threads = new Vector<>();
+        for(int i = 0; i < this.ThreadNum; ++i)
+        {
+            Thread iThread = new Thread(mt);
+            iThread.start();
+            threads.add(iThread);
+        }
+        threads.stream().forEach((iThread) -> {
+            try 
+            {
+                iThread.join();
+            }
+            catch (InterruptedException e) 
+            {
+            }
+        });
+    }
 }
