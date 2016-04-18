@@ -6,7 +6,7 @@
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Vector;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.concurrent.locks.*;
@@ -85,7 +85,7 @@ public class MultiUpload
     void start()
     {
         MUImplementation mt = new MUImplementation(this.local_path, this.path, vd);
-        Vector<Thread> threads = new Vector<>();
+        ArrayList<Thread> threads = new ArrayList<>();
         for(int i = 0; i < this.ThreadNum; ++i)
         {
             Thread iThread = new Thread(mt);

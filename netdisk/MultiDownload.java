@@ -6,7 +6,7 @@
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Vector;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.concurrent.locks.*;
@@ -82,7 +82,7 @@ public class MultiDownload
     void start()
     {
         MDImplementation mt = new MDImplementation(this.local_path, this.path, vd);
-        Vector<Thread> threads = new Vector<>();
+        ArrayList<Thread> threads = new ArrayList<>();
         for(int i = 0; i < this.ThreadNum; ++i)
         {
             Thread iThread = new Thread(mt);
