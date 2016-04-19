@@ -1,10 +1,12 @@
 import com.barchart.udt.ExceptionUDT;
 import com.barchart.udt.SocketUDT;
-import com.barchart.udt.net.NetServerSocketUDT;
+import com.barchart.udt.net.*;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
+import static java.lang.Integer.parseInt;
 import java.lang.reflect.Type;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -57,6 +59,7 @@ public class MultiServer
 class MultiServerImplementation implements Runnable
 {
     Map<Client, List<Client>> route_table = new HashMap<>();
+    Map<String, HashMap.Entry<Client, Client>> keyMap = new HashMap<>();
     long clientNum = 0;
     SocketUDT serverSocket;
     Gson gson_fromJson;
@@ -93,7 +96,7 @@ class MultiServerImplementation implements Runnable
                 switch(info.get("type_d").trim())
                 {
                     case "01":
-                        ;
+                        key_send(info, sock);
                 }
             }
             case "RegiS":
@@ -113,7 +116,7 @@ class MultiServerImplementation implements Runnable
         lock.lock();
         try 
         {
-            client = new Client(info.get("username"), this.clientNum++);
+            client = new Client(info.get("username"), this.clientNum++, sock.getRemoteInetAddress(), sock.getRemoteInetPort());
         } 
         finally 
         {
@@ -127,8 +130,61 @@ class MultiServerImplementation implements Runnable
         {
             client = it.next();
             clientOnline.put(client.userName, client.ID);
+            log(client.toString());
         }
         sock.send(gson_toJson.toJson(clientOnline).getBytes(Charset.forName("ISO-8859-1")));
+    }
+    
+    public void key_send(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    {
+        String destination = info.get("ID");
+        Client client_from = null;
+        Client client_to = null;
+        Client client = null;
+        String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
+        String port_from = sock.getRemoteInetPort() + "";
+        boolean found_to = false;
+        boolean found_from = false;
+        for (Iterator<Client> it = this.route_table.keySet().iterator(); it.hasNext();) 
+        {
+            client = it.next();
+            if(client.ID.equals(destination.trim()))
+            {
+                found_to = true;
+                client_to = client;
+            }
+            else if(client.IP.equals(IP_from) && client.port.equals(port_from))
+            {
+                client_from = client;
+                found_from = true;
+            }
+            else if(found_to && found_from)
+                break;
+        }
+        if(!(found_to && found_from))
+        {
+            sock.close();
+            log("Not online...");
+        }
+        else
+        {
+            int temp = (client_to.userName + client_from.userName).hashCode();
+            if(temp < 0)
+                temp = -temp;
+            String key = temp + "";
+            Map.Entry<Client, Client> pair = new AbstractMap.SimpleEntry<>(client_from, client_from);
+            this.keyMap.put(key, pair);
+            Map<String, String> send_info = new HashMap<>();
+            send_info.put("type", "LinkE");
+            send_info.put("type_d", "02");
+            send_info.put("ID", client_to.ID);
+            send_info.put("key", key);
+            sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+            SocketUDT sock_to = new NetSocketUDT().socketUDT();
+            send_info.replace("ID", client_from.ID);
+            sock_to.connect(new InetSocketAddress(client_to.IP, parseInt(client_to.port)));
+            sock_to.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+        }
     }
     
     @Override
@@ -162,14 +218,18 @@ class Client
 {
     String ID = null;
     String userName = null;
-    public Client(String userName, long clientNum)
+    String IP = null;
+    String port = null;
+    public Client(String userName, long clientNum, InetAddress IP, int port)
     {
         this.userName = userName;
         this.ID = String.format("%05d", clientNum);
+        this.IP = IP.toString().split("/")[1];
+        this.port = port + "";
     }
     @Override
     public String toString()
     {
-        return this.userName + "\n" + this.ID;
+        return this.userName + "\n" + this.ID + "\n" + this.IP + "\n" + this.port;
     }
 }
