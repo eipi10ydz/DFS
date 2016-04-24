@@ -172,7 +172,7 @@ class MultiServerImplementation implements Runnable
             if(temp < 0)
                 temp = -temp;
             String key = temp + "";
-            Map.Entry<Client, Client> pair = new AbstractMap.SimpleEntry<>(client_from, client_from);
+            Map.Entry<Client, Client> pair = new AbstractMap.SimpleEntry<>(client_from, client_to);
             this.keyMap.put(key, pair);
             Map<String, String> send_info = new HashMap<>();
             send_info.put("type", "LinkE");
