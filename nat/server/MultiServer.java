@@ -60,6 +60,7 @@ class MultiServerImplementation implements Runnable
 {
     Map<Client, List<Client>> route_table = new HashMap<>();
     Map<String, HashMap.Entry<Client, Client>> keyMap = new HashMap<>();
+    Map<HashMap.Entry<Client,Client>,String> record=new HashMap<>();
     long clientNum = 0;
     SocketUDT serverSocket;
     Gson gson_fromJson;
@@ -187,6 +188,61 @@ class MultiServerImplementation implements Runnable
         }
     }
     
+    public void recordinfo(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    {
+        String connectivity=info.get("Connectivity");
+        String IP_A = sock.getRemoteInetAddress().toString().split("/")[1];
+        String ID_B=info.get("ID");
+        Client A = null;
+        Client B = null;
+        Client temp;
+        boolean found_A;
+        found_A = false;
+        boolean found_B=false;
+        List<Client> connectlist;
+        Map.Entry<Client, Client> pair1 ;
+        Map.Entry<Client, Client> pair2 ;
+        for (Iterator<Client> it = route_table.keySet().iterator(); it.hasNext();)
+            {
+                temp=it.next();
+                if(temp.IP.equals(IP_A))
+                {
+                  found_A=true;
+                  A=temp;
+                }
+                else if(temp.ID.equals(ID_B))
+                {
+                    found_B=true;
+                    B=temp;
+                }
+                else if(found_A&&found_B)
+                    break;
+            }//find A and B
+        pair1 = new AbstractMap.SimpleEntry<>(A,B);
+        pair2 = new AbstractMap.SimpleEntry<>(B,A);
+        if("true".equals(connectivity.trim()))
+        {
+            if(route_table.get(A)==null)
+            {
+                connectlist=new ArrayList<>();
+                connectlist.add(B);
+                route_table.put(A,connectlist);               
+                
+            }
+            else{
+                connectlist=route_table.get(A);
+                connectlist.add(B);
+            }//add B to A's connectlist
+            record.put(pair1,"true");
+            record.put(pair2,"true");
+        }//if connectivity=true
+        else{
+            record.put(pair1,"false");
+            record.put(pair2,"false");
+        }//do nothing?
+           
+    }
+
     @Override
     public void run()
     {
@@ -233,3 +289,4 @@ class Client
         return this.userName + "\n" + this.ID + "\n" + this.IP + "\n" + this.port;
     }
 }
+
