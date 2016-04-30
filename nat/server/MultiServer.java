@@ -8,6 +8,7 @@ import static java.lang.Integer.parseInt;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -23,7 +24,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author 杨德中
+ * @author 杨德中, 苏潇
  */
 
 public class MultiServer
@@ -45,7 +46,7 @@ public class MultiServer
             threads.add(iThread);
         }
         threads.stream().forEach((iThread) -> {
-            try 
+            try
             {
                 iThread.join();
             }
@@ -60,12 +61,14 @@ class MultiServerImplementation implements Runnable
 {
     Map<Client, List<Client>> route_table = new HashMap<>();
     Map<String, HashMap.Entry<Client, Client>> keyMap = new HashMap<>();
-    Map<HashMap.Entry<Client,Client>,String> record=new HashMap<>();
+    Map<HashMap.Entry<Client,Client>, String> record = new HashMap<>();
     long clientNum = 0;
     SocketUDT serverSocket;
     Gson gson_fromJson;
     Gson gson_toJson;
+    boolean check_on = false;
     Lock lock = new ReentrantLock();
+    Date early = null;
     Type JSON_TYPE = new TypeToken<Map<String, String>>(){}.getType();
     
     final String host = "127.0.0.1";
@@ -80,6 +83,7 @@ class MultiServerImplementation implements Runnable
         this.serverSocket = new NetServerSocketUDT().socketUDT();
         serverSocket.bind(new InetSocketAddress(host, port));
         serverSocket.listen(CLIENTNUM);
+        early = new Date();
         log("Waiting for connection...");
     }
     
@@ -88,7 +92,7 @@ class MultiServerImplementation implements Runnable
         byte arrRecv[] = new byte[1024];
         log("Accept new connection ");
         sock.receive(arrRecv);
-        Map<String, String> info = null;
+        Map<String, String> info;
         info = this.gson_fromJson.fromJson((new String(arrRecv)).trim(), this.JSON_TYPE);
         switch(info.get("type").trim())
         {
@@ -97,9 +101,17 @@ class MultiServerImplementation implements Runnable
                 switch(info.get("type_d").trim())
                 {
                     case "01":
-                        key_send(info, sock);
+                    //    key_send(info, sock);
+                        nat_request(info, sock);
+                        break;
                 }
             }
+            break;
+            case "LinkC":
+            {
+                record_info(info, sock);
+            }
+            break;
             case "RegiS":
             {
                 switch(info.get("type_d").trim())
@@ -108,6 +120,7 @@ class MultiServerImplementation implements Runnable
                         register(info, sock);
                 }
             }
+            break;
         }
     }
     
@@ -135,36 +148,172 @@ class MultiServerImplementation implements Runnable
         }
         sock.send(gson_toJson.toJson(clientOnline).getBytes(Charset.forName("ISO-8859-1")));
     }
+    //两个重载的成员函数，用于两种方式查找client
+    private Client find_client(String destination)
+    {
+        Client client_to = null;
+        boolean found = false;
+        for (Iterator<Client> it = this.route_table.keySet().iterator(); it.hasNext();) 
+        {
+            client_to = it.next();
+            if(client_to.ID.equals(destination.trim()))
+            {
+                found = true;
+                break;
+            }
+        }
+        return found ? client_to : null;
+    }
+    
+    private Client find_client(String IP_from, String port_from)
+    {
+        Client client_from = null;
+        boolean found = false;
+        for (Iterator<Client> it = this.route_table.keySet().iterator(); it.hasNext();) 
+        {
+            client_from = it.next();
+            if(client_from.IP.equals(IP_from) && client_from.port.equals(port_from))
+            {
+                found = true;
+                break;
+            }
+        }
+        return found ? client_from : null;
+    }
+    
+    public void check_online() throws InterruptedException, ExceptionUDT, IOException
+    {
+        Date later;
+        while(true)
+        {
+            later = new Date();
+            if(later.getTime() - this.early.getTime() >= 1000 * 60 * 5) //毫秒级(此处为5分钟)
+            {
+                this.early = later;
+                check_implementation();
+            }
+        }
+    }
+    //没加锁，可能会出问题
+    //暂时不管keyMap，因为暂时没用...
+    private void check_implementation() throws ExceptionUDT
+    {
+        Client client;
+        SocketUDT sock;
+        Map<String, String> confirm = new HashMap<>();
+        Map<String, String> info;
+        byte [] arrRecv;
+        //需要完善检测掉线的包结构
+        Iterator it = this.route_table.keySet().iterator();
+        while(it.hasNext()) 
+        {
+            client = (Client)it.next();
+            sock = new NetSocketUDT().socketUDT(); //如果抛出异常就是创建socket的锅
+            try
+            {
+                sock.connect(new InetSocketAddress(client.IP, parseInt(client.port)));
+            }
+            catch(ExceptionUDT ex)
+            {
+                log("cannot connect...check failed..." + client.toString());
+                sock.close();
+                List<Client> list = this.route_table.get(client);
+                for (Iterator<Client> pointer = list.iterator(); it.hasNext();) 
+                {
+                    Client temp = pointer.next();
+                    this.route_table.get(temp).remove(client);
+                }
+                remove_client(client);
+                it.remove();
+            }
+        }
+    }
+    
+    private void remove_client(Client client) //只是从record中删掉关联项
+    {
+        Iterator pointer = this.record.keySet().iterator();
+        while(pointer.hasNext())
+        {
+            HashMap.Entry<Client,Client> pair = (Map.Entry<Client, Client>)pointer.next();
+            if(pair.getKey().equals(client) || pair.getValue().equals(client))
+                pointer.remove();
+        }
+    }
+    
+    public void nat_request(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    {
+        String destination = info.get("ID");
+        String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
+        String port_from = sock.getRemoteInetPort() + "";
+        Client client_from = find_client(IP_from, port_from);
+        Client client_to = find_client(destination);
+        Map<String, String> send_info = new HashMap<>();
+        if(client_to == null || client_from == null)
+        {
+            log("Not online...");
+        }
+        else if(client_from.isConnecting || client_to.isConnecting)
+        {
+            log("is connecting...cannot connect to another...");
+            send_info.put("type", "ERR");
+            send_info.put("type_d", "01");
+            sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+        }
+        else
+        {
+            lock.lock();
+            try 
+            {
+                if(client_from.isConnecting || client_to.isConnecting)
+                {
+                    log("is connecting...cannot connect to another...");
+                    send_info.put("type", "ERR");
+                    send_info.put("type_d", "01");
+                    sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+                    return;
+                }
+                client_from.isConnecting = true;
+                client_to.isConnecting = true;
+            }
+            finally 
+            {
+                lock.unlock();
+            }
+            //没问题后发包交换两节点信息，先发给to，防止connect时候失败
+            SocketUDT sock_to = new NetSocketUDT().socketUDT();
+            try
+            {
+                sock_to.connect(new InetSocketAddress(client_to.IP, parseInt(client_to.port)));
+            }
+            catch(ExceptionUDT ex)
+            {
+                //应该向client_from发送错误包
+                log("cannot connect...nat_request failed...");
+                return;
+            }
+            send_info.put("type", "LinkE");
+            send_info.put("type_d", "03");
+            send_info.put("IP", client_from.IP);
+            send_info.put("Port", client_from.port);
+            //否则向client_to发包成功
+            sock_to.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+            sock_to.close();
+            send_info.replace("IP", client_to.IP);
+            send_info.replace("Port", client_to.port);
+            sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+        }
+        sock.close();
+    }
     
     public void key_send(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
         String destination = info.get("ID");
-        Client client_from = null;
-        Client client_to = null;
-        Client client = null;
         String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
         String port_from = sock.getRemoteInetPort() + "";
-        boolean found_to = false;
-        boolean found_from = false;
-        for (Iterator<Client> it = this.route_table.keySet().iterator(); it.hasNext();) 
+        Client client_from = find_client(IP_from, port_from);
+        Client client_to = find_client(destination);
+        if(client_to == null || client_from == null)
         {
-            client = it.next();
-            if(client.ID.equals(destination.trim()))
-            {
-                found_to = true;
-                client_to = client;
-            }
-            else if(client.IP.equals(IP_from) && client.port.equals(port_from))
-            {
-                client_from = client;
-                found_from = true;
-            }
-            else if(found_to && found_from)
-                break;
-        }
-        if(!(found_to && found_from))
-        {
-            sock.close();
             log("Not online...");
         }
         else
@@ -173,80 +322,114 @@ class MultiServerImplementation implements Runnable
             if(temp < 0)
                 temp = -temp;
             String key = temp + "";
-            Map.Entry<Client, Client> pair = new AbstractMap.SimpleEntry<>(client_from, client_to);
-            this.keyMap.put(key, pair);
             Map<String, String> send_info = new HashMap<>();
             send_info.put("type", "LinkE");
             send_info.put("type_d", "02");
-            send_info.put("ID", client_to.ID);
+            send_info.put("ID", client_from.ID);
             send_info.put("key", key);
-            sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
             SocketUDT sock_to = new NetSocketUDT().socketUDT();
-            send_info.replace("ID", client_from.ID);
-            sock_to.connect(new InetSocketAddress(client_to.IP, parseInt(client_to.port)));
+            try
+            {
+                sock_to.connect(new InetSocketAddress(client_to.IP, parseInt(client_to.port)));
+            }
+            catch(ExceptionUDT ex)
+            {
+                //应该向client_from发送错误包
+                log("cannot connect...nat_request failed...");
+                return;
+            }
             sock_to.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+            sock_to.close();
+            send_info.replace("ID", client_to.ID);
+            sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+            Map.Entry<Client, Client> pair = new AbstractMap.SimpleEntry<>(client_from, client_to);
+            this.keyMap.put(key, pair);
         }
+        sock.close();
     }
     
-    public void recordinfo(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    public void record_info(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
-        String connectivity=info.get("Connectivity");
-        String IP_A = sock.getRemoteInetAddress().toString().split("/")[1];
-        String ID_B=info.get("ID");
-        Client A = null;
-        Client B = null;
-        Client temp;
-        boolean found_A;
-        found_A = false;
-        boolean found_B=false;
-        List<Client> connectlist;
-        Map.Entry<Client, Client> pair1 ;
-        Map.Entry<Client, Client> pair2 ;
-        for (Iterator<Client> it = route_table.keySet().iterator(); it.hasNext();)
-            {
-                temp=it.next();
-                if(temp.IP.equals(IP_A))
-                {
-                  found_A=true;
-                  A=temp;
-                }
-                else if(temp.ID.equals(ID_B))
-                {
-                    found_B=true;
-                    B=temp;
-                }
-                else if(found_A&&found_B)
-                    break;
-            }//find A and B
-        pair1 = new AbstractMap.SimpleEntry<>(A,B);
-        pair2 = new AbstractMap.SimpleEntry<>(B,A);
-        if("true".equals(connectivity.trim()))
+        String connectivity = info.get("Connectivity");
+        String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
+        String port_from = sock.getRemoteInetPort() + "";
+        String destination = info.get("ID");
+        Client client_from = find_client(IP_from, port_from);
+        Client client_to = find_client(destination);
+        List<Client> connect_list;
+        Map.Entry<Client, Client> pair_from;
+        if(client_from == null || client_to == null)
         {
-            if(route_table.get(A)==null)
+            log("Not online...");
+        }
+        else
+        {
+            pair_from = new AbstractMap.SimpleEntry<>(client_from, client_to);
+            if("true".equals(connectivity.trim()))
             {
-                connectlist=new ArrayList<>();
-                connectlist.add(B);
-                route_table.put(A,connectlist);               
-                
-            }
-            else{
-                connectlist=route_table.get(A);
-                connectlist.add(B);
-            }//add B to A's connectlist
-            record.put(pair1,"true");
-            record.put(pair2,"true");
-        }//if connectivity=true
-        else{
-            record.put(pair1,"false");
-            record.put(pair2,"false");
-        }//do nothing?
-           
+                connect_list = route_table.get(client_from);
+                if(connect_list == null)
+                {
+                    connect_list=new ArrayList<>();
+                    connect_list.add(client_to);
+                    route_table.put(client_from, connect_list);
+                }
+                else
+                {
+                    if(connect_list.indexOf(client_to) == -1)
+                        connect_list.add(client_to);
+                }//add B to A's connectlist
+                connect_list = route_table.get(client_to);
+                if(connect_list == null)
+                {
+                    connect_list=new ArrayList<>();
+                    connect_list.add(client_from);
+                    route_table.put(client_to, connect_list);               
+                }
+                else
+                {
+                    if(connect_list.indexOf(client_from) == -1)
+                        connect_list.add(client_from);
+                }
+                record.put(pair_from,"true");
+            }//if connectivity=true
+            else
+            {
+                record.put(pair_from,"false");
+            }//do nothing?
+            client_from.isConnecting = false;
+            client_to.isConnecting = false;
+        }   
     }
-
+    
     @Override
     public void run()
     {
-        SocketUDT sock = null;
+        SocketUDT sock;
+        if(!this.check_on)  //让一个线程用来检测定时在线
+        {
+            lock.lock();
+            try
+            {
+                this.check_on = true;
+            }
+            finally
+            {
+                lock.unlock();
+            }
+            try 
+            {
+                check_online();
+            } 
+            catch (InterruptedException | ExceptionUDT ex) 
+            {
+                Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            } 
+            catch (IOException ex) 
+            {
+                Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         while(true)
         {
             try 
@@ -276,6 +459,7 @@ class Client
     String userName = null;
     String IP = null;
     String port = null;
+    boolean isConnecting = false;
     public Client(String userName, long clientNum, InetAddress IP, int port)
     {
         this.userName = userName;
