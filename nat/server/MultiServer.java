@@ -8,7 +8,6 @@ import static java.lang.Integer.parseInt;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -112,7 +111,7 @@ class MultiServerImplementation implements Runnable
                 record_info(info, sock);
             }
             break;
-            case "RegiS":
+            case "Regis":
             {
                 switch(info.get("type_d").trim())
                 {
@@ -131,22 +130,46 @@ class MultiServerImplementation implements Runnable
         try 
         {
             client = new Client(info.get("username"), this.clientNum++, sock.getRemoteInetAddress(), sock.getRemoteInetPort());
-        } 
+        }
         finally 
         {
             lock.unlock();
         }
-        this.route_table.put(client, null);
+        Client newClient = client;
         //需要返回上线用户的ID和username
         //注意不要搞一模一样的用户名，会覆盖
+        Map<String, String> infoSend = new HashMap<>();
+        infoSend.put("type", "NodeI");
+        infoSend.put("type_d", "01");
+        infoSend.put("ID", client.ID);
+        sock.send(gson_toJson.toJson(infoSend).getBytes(Charset.forName("ISO-8859-1")));
+        infoSend.put("type", "NodeT");
+        infoSend.remove("type_d");
         Map<String, String> clientOnline = new HashMap<>();
+        Map<String, String> informInfo = new HashMap<>();
+        informInfo.put("type", "NodeI");
+        informInfo.put("type_d", "02");
+        informInfo.put("ID", client.ID);
         for (Iterator<Client> it = route_table.keySet().iterator(); it.hasNext();) 
         {
             client = it.next();
             clientOnline.put(client.userName, client.ID);
+            try 
+            {
+                SocketUDT sockInform = new NetSocketUDT().socketUDT();
+                sockInform.connect(new InetSocketAddress(client.IP, parseInt(client.port)));                
+                sockInform.send(gson_toJson.toJson(informInfo).getBytes(Charset.forName("ISO-8859-1")));
+            }
+            catch (ExceptionUDT e) 
+            {
+                log("cannot connect...");
+            }
             log(client.toString());
         }
-        sock.send(gson_toJson.toJson(clientOnline).getBytes(Charset.forName("ISO-8859-1")));
+        this.route_table.put(newClient, null);
+        infoSend.put("ID", gson_toJson.toJson(clientOnline));
+        sock.send(gson_toJson.toJson(infoSend).getBytes(Charset.forName("ISO-8859-1")));
+        sock.close();
     }
     //两个重载的成员函数，用于两种方式查找client
     private Client find_client(String destination)
@@ -200,12 +223,11 @@ class MultiServerImplementation implements Runnable
     {
         Client client;
         SocketUDT sock;
-        Map<String, String> confirm = new HashMap<>();
-        Map<String, String> info;
-        byte [] arrRecv;
+        Map<String, String> info = new HashMap<>();
+        info.put("type", "NodeD");
         //需要完善检测掉线的包结构
         Iterator it = this.route_table.keySet().iterator();
-        while(it.hasNext()) 
+        while(it.hasNext())
         {
             client = (Client)it.next();
             sock = new NetSocketUDT().socketUDT(); //如果抛出异常就是创建socket的锅
@@ -222,6 +244,23 @@ class MultiServerImplementation implements Runnable
                 {
                     Client temp = pointer.next();
                     this.route_table.get(temp).remove(client);
+                }
+                info.put("IP", client.IP);
+                for (Client next : this.route_table.keySet())
+                {
+                    if(!next.equals(client))
+                    {
+                        SocketUDT sockInform = new NetSocketUDT().socketUDT();
+                        try
+                        {
+                            sockInform.connect(new InetSocketAddress(next.IP, parseInt(next.port)));
+                            sockInform.send(gson_toJson.toJson(info).getBytes(Charset.forName("ISO-8859-1")));
+                        }
+                        catch (NumberFormatException | ExceptionUDT e) 
+                        {
+                            log("cannot connect...");
+                        }
+                    }
                 }
                 remove_client(client);
                 it.remove();
