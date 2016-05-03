@@ -9,6 +9,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.barchart.udt.ExceptionUDT;
@@ -48,6 +49,7 @@ public class Node {
 	protected InputStream in_s;
 	protected OutputStream out_s;
 	protected ReentrantLock server_link_lock;
+	protected AtomicInteger server_link_count;
 	protected Thread server_link_thread;
 	protected Map<String, Queue<Map<String, String>>> messages_from_server;
 
@@ -66,6 +68,8 @@ public class Node {
 		messages_from_server.put("Link", new ConcurrentLinkedQueue<Map<String, String>>());
 		this.server_host = server_host;
 		this.server_port = server_port;
+		server_link_lock = new ReentrantLock();
+		server_link_count = new AtomicInteger(0);
 		try {
 			IP_local = InetAddress.getLocalHost();
 		} catch (UnknownHostException e) {
