@@ -127,30 +127,38 @@ class LinkMaintainer implements Runnable {
 			return false;// TODO Something wrong
 		byte arr[] = new byte[1024];
 		String str = new String();
-		node.server_link_lock.lock();
-		//
-		node.server.send(str.getBytes());// send packet TNAT01
-		node.server.receive(arr);// receive packet TNAT03
-		//
-		// if ()
-		// return false;
 		String IP_p = new String();
 		int Port_p = 0;
 		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
 		sock.setBlocking(true);
-		sock.bind(new InetSocketAddress(node.IP_local_nat, node.Port_local_nat));
-		sock.setRendezvous(true);
+		node.server_link_count.incrementAndGet();
+		node.server_link_lock.lock();
 		try {
-			sock.connect(new InetSocketAddress(IP_p, Port_p));
+			//
+			node.server.send(str.getBytes());// send packet TNAT01
+			node.server.receive(arr);// receive packet TNAT03
+			//
+			// if ()
+			// return false;
+			sock.bind(new InetSocketAddress(node.IP_local_nat, node.Port_local_nat));
+			sock.setRendezvous(true);
+			try {
+				sock.connect(new InetSocketAddress(IP_p, Port_p));
+			} catch (ExceptionUDT e) {
+				e.printStackTrace();
+				node.server.send(str.getBytes());// send packet LinkC:false
+				return false;
+			}
+			sock.send(str.getBytes());// send packet TNAT04
+			sock.receive(arr);// receive packet TNAT04
+			//
+			node.server.send(str.getBytes());// send packet LinkC:true
 		} catch (ExceptionUDT e) {
-			node.server.send(str.getBytes());// send packet LinkC:false
-			return false;
+			throw e;
+		} finally {
+			node.server_link_lock.unlock();
+			node.server_link_count.decrementAndGet();
 		}
-		sock.send(str.getBytes());// send packet TNAT04
-		sock.receive(arr);// receive packet TNAT04
-		//
-		node.server.send(str.getBytes());// send packet LinkC:true
-		node.server_link_lock.unlock();
 		node.links_p.put(ID_p, sock);
 		node.links_p_t.put(ID_p, new Thread(new NodeLink(ID_p, sock, node)));
 		node.links_p_t.get(ID_p).start();
@@ -177,7 +185,6 @@ class LinkMaintainer implements Runnable {
 		}
 		byte arr[] = new byte[1024];
 		String str = new String();
-		node.server_link_lock.lock();
 		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
 		sock.setBlocking(true);
 		sock.bind(new InetSocketAddress(node.IP_local_nat, node.Port_local_nat));
@@ -191,8 +198,8 @@ class LinkMaintainer implements Runnable {
 		sock.receive(arr);// receive packet TNAT04
 		sock.send(str.getBytes());// send packet TNAT04
 		//
+		// doesn't need node.server_link_lock.lock()
 		node.server.send(str.getBytes());// send packet LinkC:true
-		node.server_link_lock.unlock();
 		node.links_p.put(ID_p, sock);
 		node.links_p_t.put(ID_p, new Thread(new NodeLink(ID_p, sock, node)));
 		node.links_p_t.get(ID_p).start();
