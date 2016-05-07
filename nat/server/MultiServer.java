@@ -145,20 +145,21 @@ class MultiServerImplementation implements Runnable
         sock.send(gson_toJson.toJson(infoSend).getBytes(Charset.forName("ISO-8859-1")));
         infoSend.put("type", "NodeT");
         infoSend.remove("type_d");
-        Map<String, String> clientOnline = new HashMap<>();
         Map<String, String> informInfo = new HashMap<>();
         informInfo.put("type", "NodeI");
         informInfo.put("type_d", "02");
         informInfo.put("ID", client.ID);
+        int clientNum = 0;
         for (Iterator<Client> it = route_table.keySet().iterator(); it.hasNext();) 
         {
             client = it.next();
-            clientOnline.put(client.userName, client.ID);
             try 
             {
                 SocketUDT sockInform = new NetSocketUDT().socketUDT();
                 sockInform.connect(new InetSocketAddress(client.IP, parseInt(client.port)));                
                 sockInform.send(gson_toJson.toJson(informInfo).getBytes(Charset.forName("ISO-8859-1")));
+                infoSend.put("UName_" + (clientNum + 1), client.userName);
+                infoSend.put("ID_" + (++clientNum), client.ID);
             }
             catch (ExceptionUDT e) 
             {
@@ -167,7 +168,7 @@ class MultiServerImplementation implements Runnable
             log(client.toString());
         }
         this.route_table.put(newClient, null);
-        infoSend.put("ID", gson_toJson.toJson(clientOnline));
+        infoSend.put("cnt", clientNum + "");
         sock.send(gson_toJson.toJson(infoSend).getBytes(Charset.forName("ISO-8859-1")));
         sock.close();
     }
