@@ -48,14 +48,14 @@ class NodeThread implements Runnable {
 	private void node_inserted(String nodeID) {
 		node.nodeIDs.add(nodeID);
 		node.node_inserted_lm.add(nodeID);
-		// TODO node.node_inserted_rout.add(nodeID);
+		node.node_inserted_rout.add(nodeID);
 		return;
 	}
 
 	private void node_deleted(String nodeID) {
 		node.nodeIDs.remove(nodeID);
 		node.node_deleted_lm.add(nodeID);
-		// TODO node.node_deleted_rout.add(nodeID);
+		node.node_deleted_rout.add(nodeID);
 		return;
 	}
 }
