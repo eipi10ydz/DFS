@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -43,6 +44,9 @@ public class Node {
 	protected Map<String, SocketUDT> links_p;
 	protected Map<String, Thread> links_p_t;
 
+	protected Queue<String> node_inserted_rout;
+	protected Queue<String> node_deleted_rout;
+
 	protected SocketUDT server;
 	protected String server_host;
 	protected int server_port;
@@ -56,16 +60,20 @@ public class Node {
 	/**
 	 * @param server_host
 	 * @param server_port
+	 * @throws ExceptionUDT 
 	 */
-	public Node(String server_host, int server_port) {
+	public Node(String server_host, int server_port) throws ExceptionUDT {
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
 		node_inserted_lm = new ConcurrentLinkedQueue<>();
 		node_deleted_lm = new ConcurrentLinkedQueue<>();
 		links_p = new ConcurrentHashMap<>();
 		links_p_t = new ConcurrentHashMap<>();
+		node_inserted_rout = new ConcurrentLinkedQueue<>();
+		node_deleted_rout = new ConcurrentLinkedQueue<>();
 		messages_from_server = new ConcurrentHashMap<>();
 		messages_from_server.put("Node", new ConcurrentLinkedQueue<Map<String, String>>());
 		messages_from_server.put("Link", new ConcurrentLinkedQueue<Map<String, String>>());
+		messages_from_server.put("ERR", new ConcurrentLinkedQueue<Map<String, String>>());
 		this.server_host = server_host;
 		this.server_port = server_port;
 		server_link_lock = new ReentrantLock();
@@ -78,6 +86,8 @@ public class Node {
 			e.printStackTrace();
 		}
 		byte arr[] = new byte[1024];
+		String str;
+		Map<String, String> pac;
 		try {
 			server = new SocketUDT(TypeUDT.STREAM);
 			server.setBlocking(true);
@@ -88,10 +98,12 @@ public class Node {
 			in_s = new NetInputStreamUDT(server);// currently not in use
 			out_s = new NetOutputStreamUDT(server);// currently not in use
 			server.receive(arr);
-			// ID = ;
+			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+			pac = Packer.unpack(str);
+			ID = pac.get("ID");
 		} catch (ExceptionUDT e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw e;
 		}
 		// TODO receive NodeID table
 		link_maintainer_thread = new Thread(new LinkMaintainer(this));
