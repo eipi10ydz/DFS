@@ -1,3 +1,6 @@
+import java.nio.charset.Charset;
+import java.util.Map;
+
 import com.barchart.udt.ExceptionUDT;
 
 /**
@@ -27,15 +30,36 @@ class ServerLink implements Runnable {
 	@Override
 	public void run() {
 		byte[] arr = new byte[1024];
+		String str = new String();
+		Map<String, String> pac;
 		while (true) {
 			if (node.server_link_count.get() == 0) {// inaccurate: When no
 													// thread wants to use
-													// node.server_link
+													// node.server
 				node.server_link_lock.lock();
 				try {
 					node.server.setSoTimeout(1);
 					node.server.receive(arr);
-					// TODO
+					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+					pac = Packer.unpack(str);
+					String tmp = null;
+					switch (pac.get("type")) {
+					case ("NodeI"):
+					case ("NodeD"):
+					case ("NodeT"):
+						tmp = "Node";
+						break;
+					case ("LinkE"):
+					case ("LinkC"):
+						tmp = "Link";
+						break;
+					case ("ERR"):
+						tmp = "ERR";
+						break;
+					default:
+						throw new NodeException("Unknown type" + pac.toString());
+					}
+					node.messages_from_server.get(tmp).add(pac);
 				} catch (ExceptionUDT e) {
 					switch (e.getError().getCode()) {
 					case (2001):
@@ -46,6 +70,9 @@ class ServerLink implements Runnable {
 					default:
 						e.printStackTrace();
 					}
+				} catch (NodeException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				} finally {
 					try {
 						node.server.setSoTimeout(10000);
