@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -28,7 +29,7 @@ import java.util.logging.Logger;
 
 public class MultiServer
 {
-    int threadNum = 10;
+    private int threadNum = 10;
     public MultiServer(int threadNum)
     {
         this.threadNum = threadNum;
@@ -44,36 +45,36 @@ public class MultiServer
             iThread.start();
             threads.add(iThread);
         }
-        threads.stream().forEach((iThread) -> {
-            try
+        for(Thread temp : threads)
+        {
+        	try 
             {
-                iThread.join();
+                temp.join();
             }
             catch (InterruptedException e) 
             {
             }
-        });
+        }
     }
 }
 
 class MultiServerImplementation implements Runnable
 {
-    Map<Client, List<Client>> route_table = new HashMap<>();
-    Map<String, HashMap.Entry<Client, Client>> keyMap = new HashMap<>();
-    Map<HashMap.Entry<Client,Client>, String> record = new HashMap<>();
-    long clientNum = 0;
-    SocketUDT serverSocket;
-    Gson gson_fromJson;
-    Gson gson_toJson;
-    boolean check_on = false;
-    Lock lock = new ReentrantLock();
-    Date early = null;
-    Type JSON_TYPE = new TypeToken<Map<String, String>>(){}.getType();
+    private Map<Client, List<Client>> route_table = new HashMap<>();
+    private Map<String, HashMap.Entry<Client, Client>> keyMap = new HashMap<>();
+    private Map<HashMap.Entry<Client,Client>, String> record = new HashMap<>();
+    private long clientNum = 0;
+    private SocketUDT serverSocket;
+    private Gson gson_fromJson;
+    private Gson gson_toJson;
+    private boolean check_on = false;
+    private Lock lock = new ReentrantLock();
+    private Date early = null;
+    private Type JSON_TYPE = new TypeToken<Map<String, String>>(){}.getType();
     
-    final String host = "127.0.0.1";
-    final int port = 6666;
-    final int CLIENTNUM = 10;
-    final String NAT_TYPE = "TNAT";
+    private final String host = "127.0.0.1";
+    private final int port = 6666;
+    private final int CLIENTNUM = 10;
     
     public MultiServerImplementation() throws IOException 
     {
@@ -86,7 +87,7 @@ class MultiServerImplementation implements Runnable
         log("Waiting for connection...");
     }
     
-    public void dual_with(SocketUDT sock) throws ExceptionUDT
+    private void dual_with(SocketUDT sock) throws ExceptionUDT
     {
         byte arrRecv[] = new byte[1024];
         log("Accept new connection ");
@@ -123,7 +124,7 @@ class MultiServerImplementation implements Runnable
         }
     }
     
-    public void register(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    private void register(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
         Client client = null;
         lock.lock();
@@ -205,7 +206,7 @@ class MultiServerImplementation implements Runnable
         return found ? client_from : null;
     }
     
-    public void check_online() throws InterruptedException, ExceptionUDT, IOException
+    private void check_online() throws InterruptedException, ExceptionUDT, IOException
     {
         Date later;
         while(true)
@@ -227,7 +228,7 @@ class MultiServerImplementation implements Runnable
         Map<String, String> info = new HashMap<>();
         info.put("type", "NodeD");
         //需要完善检测掉线的包结构
-        Iterator it = this.route_table.keySet().iterator();
+        Iterator<Client> it = this.route_table.keySet().iterator();
         while(it.hasNext())
         {
             client = (Client)it.next();
@@ -271,7 +272,7 @@ class MultiServerImplementation implements Runnable
     
     private void remove_client(Client client) //只是从record中删掉关联项
     {
-        Iterator pointer = this.record.keySet().iterator();
+        Iterator<Entry<Client, Client>> pointer = this.record.keySet().iterator();
         while(pointer.hasNext())
         {
             HashMap.Entry<Client,Client> pair = (Map.Entry<Client, Client>)pointer.next();
@@ -280,7 +281,7 @@ class MultiServerImplementation implements Runnable
         }
     }
     
-    public void nat_request(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    private void nat_request(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
         String destination = info.get("ID");
         String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
@@ -388,7 +389,7 @@ class MultiServerImplementation implements Runnable
         sock.close();
     }
     
-    public void record_info(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    private void record_info(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
         String connectivity = info.get("Connectivity");
         String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
