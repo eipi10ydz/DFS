@@ -2,6 +2,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.barchart.udt.ExceptionUDT;
 import com.barchart.udt.SocketUDT;
@@ -45,7 +46,7 @@ class LinkMaintainer implements Runnable {
 						if (establish_link_m(nodeID)) {
 							link_timers.remove(nodeID);
 						} else {
-							timer.postpone(20000 * timer.getCnt());// TODO
+							timer.postpone(20000 * timer.getCnt());
 							timer.start();
 						}
 					} catch (ExceptionUDT e) {
@@ -62,6 +63,7 @@ class LinkMaintainer implements Runnable {
 				if (node.links_p.containsKey(nodeID)) {
 					node.links_p_t.get(nodeID).interrupt();
 					node.links_p_t.remove(nodeID);
+					node.links_p_l.remove(nodeID);
 					node.links_p.remove(nodeID);
 				} else
 					link_timers.remove(nodeID);
@@ -73,6 +75,7 @@ class LinkMaintainer implements Runnable {
 					Map<String, String> pac;
 					node.links_p.remove(nodeID);
 					node.links_p_t.remove(nodeID);
+					node.links_p_l.remove(nodeID);
 					pac = new ConcurrentHashMap<String, String>();
 					pac.put("ID", nodeID);
 					pac.put("Connectivity", "false");
@@ -227,6 +230,7 @@ class LinkMaintainer implements Runnable {
 		node.links_p.put(ID_p, sock);
 		node.links_p_t.put(ID_p, new Thread(new NodeLink(ID_p, sock, node)));
 		node.links_p_t.get(ID_p).start();
+		node.links_p_l.put(ID_p, new ReentrantLock());
 		return true;
 	}
 
@@ -246,6 +250,7 @@ class LinkMaintainer implements Runnable {
 		if (node.links_p.containsKey(ID_p)) {
 			node.links_p_t.get(ID_p).interrupt();
 			node.links_p_t.remove(ID_p);
+			node.links_p_l.remove(ID_p);
 			node.links_p.remove(ID_p);
 		}
 		byte arr[] = new byte[1024];
@@ -300,6 +305,7 @@ class LinkMaintainer implements Runnable {
 		node.links_p.put(ID_p, sock);
 		node.links_p_t.put(ID_p, new Thread(new NodeLink(ID_p, sock, node)));
 		node.links_p_t.get(ID_p).start();
+		node.links_p_l.put(ID_p, new ReentrantLock());
 		return true;
 	}
 

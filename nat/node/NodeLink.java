@@ -1,3 +1,6 @@
+import java.nio.charset.Charset;
+import java.util.Map;
+
 import com.barchart.udt.ExceptionUDT;
 import com.barchart.udt.SocketUDT;
 
@@ -33,15 +36,38 @@ class NodeLink implements Runnable {
 	 */
 	@Override
 	public void run() {
+		String str = new String();
 		byte[] arr = new byte[1024];
+		Map<String, String> pac;
 		try {
 			while (!Thread.currentThread().isInterrupted()) {
 				Thread.sleep(1);
-				socket.receive(arr);
-				// TODO
+				try {
+					socket.receive(arr);
+					str += new String(arr, Charset.forName("ISO-8859-1")).trim();
+					pac = Packer.unpack(str);
+					if (pac.get("To").equals(node.ID)) {
+						node.data_arrived.get(pac.get("From")).data += (pac.get("Content"));
+					} else {// Launch a new task and hold its result in
+							// node.send_results
+						node.send_results
+								.add(node.data_to_send.submit(new DataSender(node, pac.get("To"), pac.get("Content"))));
+					}
+				} catch (ExceptionUDT e) {
+					switch (e.getError().getCode()) {
+					case (6002):
+					case (6003):
+						break;
+					default:
+						e.printStackTrace();
+						throw e;
+					}
+				}
 			}
 		} catch (InterruptedException e) {
 		} catch (ExceptionUDT e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			try {
 				socket.close();
