@@ -1,15 +1,18 @@
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -43,7 +46,9 @@ public class Node {
 
 	protected Map<String, SocketUDT> links_p;
 	protected Map<String, Thread> links_p_t;
+	protected Map<String, ReentrantLock> links_p_l;
 
+	protected NodeRouter router;
 	protected Queue<String> node_inserted_rout;
 	protected Queue<String> node_deleted_rout;
 
@@ -57,10 +62,14 @@ public class Node {
 	protected Thread server_link_thread;
 	protected Map<String, Queue<Map<String, String>>> messages_from_server;
 
+	protected Map<String, DataRransferor> data_arrived;
+	protected ExecutorService data_to_send;
+	protected ArrayList<Future<Boolean>> send_results;
+
 	/**
 	 * @param server_host
 	 * @param server_port
-	 * @throws ExceptionUDT 
+	 * @throws ExceptionUDT
 	 */
 	public Node(String server_host, int server_port) throws ExceptionUDT {
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
@@ -68,6 +77,8 @@ public class Node {
 		node_deleted_lm = new ConcurrentLinkedQueue<>();
 		links_p = new ConcurrentHashMap<>();
 		links_p_t = new ConcurrentHashMap<>();
+		links_p_l = new ConcurrentHashMap<>();
+		router = new NodeRouter(this);
 		node_inserted_rout = new ConcurrentLinkedQueue<>();
 		node_deleted_rout = new ConcurrentLinkedQueue<>();
 		messages_from_server = new ConcurrentHashMap<>();
@@ -78,6 +89,9 @@ public class Node {
 		this.server_port = server_port;
 		server_link_lock = new ReentrantLock();
 		server_link_count = new AtomicInteger(0);
+		data_arrived = new ConcurrentHashMap<>();
+		data_to_send = Executors.newCachedThreadPool();
+		send_results = new ArrayList<>();
 		try {
 			IP_local = InetAddress.getLocalHost();
 		} catch (UnknownHostException e) {
@@ -106,6 +120,7 @@ public class Node {
 			throw e;
 		}
 		// TODO receive NodeID table
+		// TODO data_to_send
 		link_maintainer_thread = new Thread(new LinkMaintainer(this));
 		link_maintainer_thread.start();
 		node_thread = new Thread(new NodeThread(this));
@@ -115,12 +130,20 @@ public class Node {
 	}
 
 	/**
-	 * @param file
+	 * @param str
 	 * @param ID_p
 	 * @return
 	 */
-	public boolean transfer_file(File file, String ID_p) {
-		return false;
-
+	public boolean transfer_message(String str, String ID_p) {
+		if (str == null || str.isEmpty()) {
+			throw new IllegalArgumentException("Empty String.");
+		}
+		if (nodeIDs.contains(ID_p)) {// Launch a new task and hold its result in
+										// send_results
+			send_results.add(data_to_send.submit(new DataSender(this, ID_p, str)));
+			return true;
+		} else {
+			throw new IllegalArgumentException("The destination isn't exist.");
+		}
 	}
 }
