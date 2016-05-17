@@ -58,46 +58,58 @@ public class Packer {
 		return json;
 	}
 	
-	public Map<String, String> Receive_pac(String pac) throws NodeException{
-		Gson gson = new Gson();
-		Type t = new TypeToken<Map<String, String>>(){}.getType();
-		Map<String, String> map = new HashMap<String,String>();
-		try {
-			map = gson.fromJson(pac, t);
-		}
-		catch(JsonSyntaxException e){
-			System.err.println("解析失败");
-		}
+	static public boolean check_pack(Map<String, String> map){
 		if(map == null){
-			throw new NodeException("包为空");
+			return false;
 		}
 		else if(!map.containsKey("type")){
-			throw new NodeException("type类型不对");
+			return false;
 		}
 		switch(map.get("type")){
 			case "LinkE" :
-				if(!map.get("type_d").equals("03")){
-					throw new NodeException("type_d类型不对");
+				if(!map.containsKey("type_d")){
+					return false;
+				}
+			    else if(!map.get("type_d").equals("03")){
+					return false;
 				}
 				else if(!map.containsKey("IP")||!map.containsKey("Port")||map.size() != 4){
-					throw new NodeException("包的结构不对");
+					return false;
 				}
-				return map;
+				return true;
 			case "ERR" :
-				if(!map.get("type_d").equals("01")){
-					throw new NodeException("type_d类型不对");
+				if(!map.containsKey("type_d")){
+					return false;
+				}
+				else if(!map.get("type_d").equals("01")){
+					return false;
 				}
 				else if(map.size() != 2){
-					throw new NodeException("包的结构不对");
+					return false;
 				}
-				return map;
+				return true;
+			case "NodeI":
+				if(!map.containsKey("type_d")){
+					return false;
+				}
+				else if(!map.get("type_d").equals("01")&&!map.get("type_d").equals("02")){
+					return false;
+				}
+				else if(!map.containsKey("ID")||map.size() != 3){
+					return false;
+				}
+				return true;
+			case "NodeD":
+				if(!map.containsKey("IP")||map.size()!= 2){
+					return false;
+				}
+				return true;
 			default :
-				throw new NodeException("包的type类型不对");
-				
+				return false;	
 		}
 	}
 	
-	public Map<String, String> Check_table(String table) throws NodeException{
+	static public Map<String, String> Check_table(String table) throws NodeException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new HashMap<String,String>();
@@ -127,9 +139,8 @@ public class Packer {
         }
         String s1 = new String("UName_"); 
         String s2 = new String("ID_");
-    	for(int i = 0 ;i < cnt ;i++){
-         	String s3 = ""+i;
-         	if(!map.containsKey(s1.concat(s3))||!map.containsKey(s2.concat(s3))){
+    	for(int i = 1 ;i <= cnt ;i++){
+         	if(!map.containsKey(s1+i)||!map.containsKey(s2+i)){
          		throw new NodeException("包内容不全");
          	}
         }
@@ -139,13 +150,18 @@ public class Packer {
 	/**
 	 * @param pac
 	 * @return
+	 * @throws NodeException
 	 */
-	static public Map<String, String> unpack(String pac) {
+	static public Map<String, String> unpack(String pac) throws NodeException{
 		Gson gson = new Gson();
-		Type t = new TypeToken<Map<String, String>>() {
-		}.getType();
-		Map<String, String> map = gson.fromJson(pac, t);
+		Type t = new TypeToken<Map<String, String>>(){}.getType();
+		Map<String, String> map = new HashMap<String,String>();
+		try {
+			map = gson.fromJson(pac, t);
+		}
+		catch(JsonSyntaxException e){
+			throw new NodeException("解析失败");
+		}
 		return map;
 	}
-
 }
