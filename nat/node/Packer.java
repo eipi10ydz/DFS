@@ -11,7 +11,7 @@ import java.util.Map;
  */
 
 /**
- * @author Àî†Ï£
+ * @author æäºå¸Œ
  *
  */
 
@@ -25,14 +25,31 @@ public class Packer {
 	static public String pack(String Type, Map<String, String> pac) throws NodeException {
 		Gson gson = new Gson();
 		String json = new String();
-		if (!Type.equals("LinkC")) {
-			throw new NodeException("°üµÄÀàĞÍ²»¶Ô");
-		} else if (!pac.containsKey("ID") || !pac.containsKey("Connectivity") || pac.size() != 2) {
-			throw new NodeException("°üµÄ½á¹¹²»¶Ô");
-		} // °üµÄÀàĞÍ¶ÔÁË£¬µ«ÊÇ½á¹¹²»¶Ô
-		pac.put("type", Type);
-		json = gson.toJson(pac);
-		return json;
+		switch(Type){
+		 	case "LinkC" :
+		 		if (!pac.containsKey("ID") || !pac.containsKey("Connectivity") || pac.size() != 2) {
+					throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
+		 		}
+				else{
+					pac.put("type", Type);
+					json = gson.toJson(pac);
+					return json;
+				}
+		 	case "Data" :
+		 		if(!pac.containsKey("From")||!pac.containsKey("To")||!pac.containsKey("Content")){
+		 			throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
+		 		}
+		 		else if(pac.size() != 3){
+		 			throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
+		 		}
+		 		else{
+		 			pac.put("type", Type);
+					json = gson.toJson(pac);
+					return json;
+		 		}
+		 	default:
+		 		throw new NodeException("typeç±»å‹ä¸å¯¹");
+		}
 	}
 
 	/**
@@ -46,11 +63,11 @@ public class Packer {
 		Gson gson = new Gson();
 		String json = new String();
 		if (!Type.equals("LinkE")) {
-			throw new NodeException("°üµÄtypeÀàĞÍ²»¶Ô");
+			throw new NodeException("åŒ…çš„typeç±»å‹ä¸å¯¹");
 		} else if (!Type_d.equals("01") && !Type_d.equals("04")) {
-			throw new NodeException("°üµÄtype_dÀàĞÍ²»¶Ô");
+			throw new NodeException("åŒ…çš„type_dç±»å‹ä¸å¯¹");
 		} else if (!pac.containsKey("ID") || pac.size() != 1) {
-			throw new NodeException("°üµÄ½á¹¹²»¶Ô");
+			throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
 		}
 		pac.put("type", Type);
 		pac.put("type_d", Type_d);
@@ -104,6 +121,14 @@ public class Packer {
 					return false;
 				}
 				return true;
+			case "Data":
+				if(!map.containsKey("From")||!map.containsKey("To")||!map.containsKey("Content")){
+					return false;
+				}
+				else if(map.size() != 4){
+					return false;
+				}
+				return true;
 			default :
 				return false;	
 		}
@@ -120,28 +145,28 @@ public class Packer {
 			e.printStackTrace();
 		}
 		if(map == null){
-			throw new NodeException("±íÎª¿Õ");
+			throw new NodeException("è¡¨ä¸ºç©º");
 		}
 		else if (!map.containsKey("type") ){
-			throw new NodeException("typeÀàĞÍ²»¶Ô");
+			throw new NodeException("typeç±»å‹ä¸å¯¹");
 		}
 		else if (!map.get("type").equals("NodeT")){
-			throw new NodeException("typeÀàĞÍ²»¶Ô");
+			throw new NodeException("typeç±»å‹ä¸å¯¹");
 		}
 		else if (!map.containsKey("cnt") ){
-			throw new NodeException("ÎŞcnt");
+			throw new NodeException("æ— cnt");
 		}
 		String count = new String();
 		count = map.get("cnt");
         int cnt = Integer.parseInt(count);
         if(map.size() != 2+cnt*2 ){
-        	throw new NodeException("ÄÚÈİÊıÁ¿²»¶Ô");
+        	throw new NodeException("å†…å®¹æ•°é‡ä¸å¯¹");
         }
         String s1 = new String("UName_"); 
         String s2 = new String("ID_");
     	for(int i = 1 ;i <= cnt ;i++){
          	if(!map.containsKey(s1+i)||!map.containsKey(s2+i)){
-         		throw new NodeException("°üÄÚÈİ²»È«");
+         		throw new NodeException("åŒ…å†…å®¹ä¸å…¨");
          	}
         }
     	return map;
@@ -160,7 +185,7 @@ public class Packer {
 			map = gson.fromJson(pac, t);
 		}
 		catch(JsonSyntaxException e){
-			throw new NodeException("½âÎöÊ§°Ü");
+			throw new NodeException("è§£æå¤±è´¥");
 		}
 		return map;
 	}
