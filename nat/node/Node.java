@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -28,12 +29,14 @@ import com.barchart.udt.net.NetOutputStreamUDT;
 
 /**
  * @author wzy
+ * @author 李亞希
  *
  */
 public class Node {
 
 	protected String ID;
 	protected Set<String> nodeIDs;
+	protected Map<String, String> name_ID;
 	protected Thread node_thread;
 
 	protected InetAddress IP_local;
@@ -73,6 +76,7 @@ public class Node {
 	 */
 	public Node(String server_host, int server_port) throws ExceptionUDT {
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
+		name_ID = new HashMap<String, String>();
 		node_inserted_lm = new ConcurrentLinkedQueue<>();
 		node_deleted_lm = new ConcurrentLinkedQueue<>();
 		links_p = new ConcurrentHashMap<>();
@@ -119,7 +123,23 @@ public class Node {
 			// TODO Auto-generated catch block
 			throw e;
 		}
-		// TODO receive NodeID table
+		// TODO
+		server.receive(arr);
+		str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+		Map<String, String> map;
+		Pac1 check = new Pac1();
+		try {
+			map = check.Check_table(str);
+			int cnt = Integer.parseInt(map.get("cnt"));
+			String s1 = new String("UName_");
+			String s2 = new String("ID_");
+			for (int i = 1; i <= cnt; i++) {
+				nodeIDs.add(map.get(s2 + i));
+				name_ID.put(map.get(s1 + i), map.get(s2 + i));
+			}
+		} catch (NodeException e) {
+			e.printStackTrace();
+		}
 		// TODO data_to_send
 		link_maintainer_thread = new Thread(new LinkMaintainer(this));
 		link_maintainer_thread.start();
