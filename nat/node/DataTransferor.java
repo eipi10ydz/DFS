@@ -1,4 +1,4 @@
-ÁºÌÎimport java.io.IOException;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
@@ -15,9 +15,9 @@ import java.io.Serializable;
 public class DataTransferor implements Serializable {
 
 	/**
-	 *
+	 * 
 	 */
-	private static final long serialVersionUID = 4536285731163136597L;
+	private static final long serialVersionUID = 925149001331900901L;
 	private Node node;
 	private String peer;
 	protected String data;
@@ -26,7 +26,7 @@ public class DataTransferor implements Serializable {
 	 * @param node
 	 * @param peer
 	 */
-	public DataRransferor(Node node, String peer) {
+	public DataTransferor(Node node, String peer) {
 		if (node == null || peer == null)
 			throw new IllegalArgumentException("Illegal argument.");
 		this.node = node;
