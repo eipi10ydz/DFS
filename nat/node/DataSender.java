@@ -1,7 +1,10 @@
+package data_transferor;
+
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import com.barchart.udt.ExceptionUDT;
 
@@ -30,7 +33,9 @@ class DataSender implements Callable<Boolean> {
 		this.data = data;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.util.concurrent.Callable#call()
 	 */
 	@Override
@@ -43,24 +48,31 @@ class DataSender implements Callable<Boolean> {
 		pac.put("Content", data);
 		try {
 			str = Packer.pack("Data", pac);
-		} catch (NodeException e1) {
+		} catch (NodeException e) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			e.printStackTrace();
 		}
-		while (true) {
-			node.router.lock.lock();
-			next_hop = node.router.find_next_hop(dest);
-			node.router.lock.unlock();
-			node.links_p_l.get(next_hop);// TODO
-			try {
-				node.links_p.get(next_hop).send(str.getBytes(Charset.forName("ISO-8859-1")));
-			} catch (ExceptionUDT e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				break;
+		try {
+			for (int i = 0; i != node.nodeIDs.size(); ++i) {
+				node.router.lock.lock();
+				next_hop = node.router.find_next_hop(dest);
+				node.router.lock.unlock();
+				if (node.links_p_l.get(next_hop).tryLock(100, TimeUnit.MILLISECONDS)) {
+					try {
+						node.links_p.get(next_hop).send(str.getBytes(Charset.forName("ISO-8859-1")));
+						node.links_p_l.get(next_hop).unlock();
+						return true;
+					} catch (ExceptionUDT e) {
+						node.links_p_l.get(next_hop).unlock();
+						e.printStackTrace();
+					}
+				}
 			}
-			return true;
-		}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} // TODO
 		return false;
 	}
 
