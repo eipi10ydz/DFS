@@ -182,7 +182,7 @@ public class Packer {
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new HashMap<String,String>();
 		try {
-			map = gson.fromJson(pac, t);
+			map = gson.fromJson(pac.trim(), t);
 		}
 		catch(JsonSyntaxException e){
 			throw new NodeException("解析失败");
