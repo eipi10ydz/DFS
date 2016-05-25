@@ -1,3 +1,5 @@
+package data_transferor;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -5,7 +7,6 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -29,19 +30,19 @@ import com.barchart.udt.net.NetOutputStreamUDT;
 
 /**
  * @author wzy
- * @author 李亞希
  *
  */
 public class Node {
 
 	protected String ID;
+	protected String user_name;
 	protected Set<String> nodeIDs;
-	protected Map<String, String> name_ID;
+	protected Map<String, String> UName_ID;
 	protected Thread node_thread;
 
 	protected InetAddress IP_local;
-	protected InetAddress IP_local_nat;
-	protected int Port_local_nat;
+	protected InetAddress IP_local_server;
+	protected int Port_local_server;
 
 	protected Queue<String> node_inserted_lm;
 	protected Queue<String> node_deleted_lm;
@@ -63,20 +64,24 @@ public class Node {
 	protected ReentrantLock server_link_lock;
 	protected AtomicInteger server_link_count;
 	protected Thread server_link_thread;
+	protected Thread server_link2_thread;
 	protected Map<String, Queue<Map<String, String>>> messages_from_server;
 
-	protected Map<String, DataRransferor> data_arrived;
+	protected Map<String, DataTransferor> data_arrived;
 	protected ExecutorService data_to_send;
 	protected ArrayList<Future<Boolean>> send_results;
 
 	/**
+	 * @param user_name
 	 * @param server_host
 	 * @param server_port
 	 * @throws ExceptionUDT
+	 * @throws NodeException
 	 */
-	public Node(String server_host, int server_port) throws ExceptionUDT {
+	public Node(String user_name, String server_host, int server_port) throws ExceptionUDT, NodeException {
+		this.user_name = user_name;
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
-		name_ID = new HashMap<String, String>();
+		UName_ID = new ConcurrentHashMap<>();
 		node_inserted_lm = new ConcurrentLinkedQueue<>();
 		node_deleted_lm = new ConcurrentLinkedQueue<>();
 		links_p = new ConcurrentHashMap<>();
@@ -111,10 +116,14 @@ public class Node {
 			server.setBlocking(true);
 			server.connect(new InetSocketAddress(server_host, server_port));
 			server.setSoTimeout(10000);
-			IP_local_nat = server.getLocalInetAddress();
-			Port_local_nat = server.getLocalInetPort();
+			IP_local_server = server.getLocalInetAddress();
+			Port_local_server = server.getLocalInetPort();
 			in_s = new NetInputStreamUDT(server);// currently not in use
 			out_s = new NetOutputStreamUDT(server);// currently not in use
+			pac = new ConcurrentHashMap<String, String>();
+			pac.put("Insertion", "Insertion");
+			str = Packer.pack("NodeI", "00", pac);
+			server.send(str.getBytes(Charset.forName("ISO-8859-1")));// Insertion
 			server.receive(arr);
 			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 			pac = Packer.unpack(str);
@@ -122,29 +131,36 @@ public class Node {
 		} catch (ExceptionUDT e) {
 			// TODO Auto-generated catch block
 			throw e;
+		} catch (NodeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw e;
 		}
-		// TODO
-		server.receive(arr);
+		pac = new ConcurrentHashMap<String, String>();
+		pac.put("UName", this.user_name);
+		str = Packer.pack("NodeI", "03", pac);
+		server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send user
+																	// name
+		server.receive(arr);// receive node and user name table
 		str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-		Map<String, String> map;
-		Pac1 check = new Pac1();
 		try {
-			map = check.Check_table(str);
-			int cnt = Integer.parseInt(map.get("cnt"));
+			pac = Packer.Check_table(str);
+			int cnt = Integer.parseInt(pac.get("cnt"));
 			String s1 = new String("UName_");
 			String s2 = new String("ID_");
 			for (int i = 1; i <= cnt; i++) {
-				nodeIDs.add(map.get(s2 + i));
-				name_ID.put(map.get(s1 + i), map.get(s2 + i));
+				nodeIDs.add(pac.get(s2 + i));
+				UName_ID.put(pac.get(s1 + i), pac.get(s2 + i));
 			}
 		} catch (NodeException e) {
 			e.printStackTrace();
 		}
-		// TODO data_to_send
 		link_maintainer_thread = new Thread(new LinkMaintainer(this));
 		link_maintainer_thread.start();
 		node_thread = new Thread(new NodeThread(this));
 		node_thread.start();
+		server_link2_thread = new Thread(new ServerAccepter(this));
+		server_link_thread.start();
 		server_link_thread = new Thread(new ServerLink(this));
 		server_link_thread.start();
 	}
