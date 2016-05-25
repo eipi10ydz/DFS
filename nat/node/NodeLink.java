@@ -1,3 +1,5 @@
+package data_transferor;
+
 import java.nio.charset.Charset;
 import java.util.Map;
 
@@ -47,12 +49,14 @@ class NodeLink implements Runnable {
 					str += new String(arr, Charset.forName("ISO-8859-1")).trim();
 					pac = Packer.unpack(str);
 					if (pac.get("To").equals(node.ID)) {
-						node.data_arrived.get(pac.get("From")).data += (pac.get("Content"));
+						final String content = pac.get("Content");
+						node.data_arrived.get(pac.get("From")).data.getAndUpdate((String data) -> data + content);
 					} else {// Launch a new task and hold its result in
 							// node.send_results
 						node.send_results
 								.add(node.data_to_send.submit(new DataSender(node, pac.get("To"), pac.get("Content"))));
 					}
+					str = new String();
 				} catch (ExceptionUDT e) {
 					switch (e.getError().getCode()) {
 					case (6002):
@@ -62,6 +66,9 @@ class NodeLink implements Runnable {
 						e.printStackTrace();
 						throw e;
 					}
+				} catch (NodeException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		} catch (InterruptedException e) {
