@@ -1,8 +1,11 @@
+package data_transferor;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
@@ -17,10 +20,10 @@ public class DataTransferor implements Serializable {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 925149001331900901L;
+	private static final long serialVersionUID = -3263064232605461413L;
 	private Node node;
 	private String peer;
-	protected String data;
+	protected AtomicReference<String> data;
 
 	/**
 	 * @param node
@@ -30,8 +33,9 @@ public class DataTransferor implements Serializable {
 		if (node == null || peer == null)
 			throw new IllegalArgumentException("Illegal argument.");
 		this.node = node;
-		this.peer = peer;// TODO
-		node.data_arrived.put(peer, this);
+		this.peer = node.UName_ID.get(peer);
+		this.data.set(new String());
+		node.data_arrived.put(this.peer, this);
 	}
 
 	/**
@@ -48,7 +52,7 @@ public class DataTransferor implements Serializable {
 	 * @throws IOException
 	 */
 	private void writeObject(ObjectOutputStream out) throws IOException {
-		out.writeBytes(data);
+		out.writeBytes(data.getAndSet(new String()));
 	}
 
 	/**
