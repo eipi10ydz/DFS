@@ -1,3 +1,4 @@
+package data_transferor;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -171,7 +172,7 @@ class LinkMaintainer implements Runnable {
 			}
 			IP_p = pac.get("IP");
 			Port_p = Integer.parseInt(pac.get("Port"));
-			sock.bind(new InetSocketAddress(node.IP_local_nat, node.Port_local_nat));
+			sock.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
 			sock.setRendezvous(true);
 			try {
 				sock.connect(new InetSocketAddress(IP_p, Port_p));
@@ -258,7 +259,7 @@ class LinkMaintainer implements Runnable {
 		String str = new String();
 		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
 		sock.setBlocking(true);
-		sock.bind(new InetSocketAddress(node.IP_local_nat, node.Port_local_nat));
+		sock.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
 		sock.setRendezvous(true);
 		try {
 			sock.connect(new InetSocketAddress(IP_p, Port_p));
