@@ -134,10 +134,8 @@ public class Node {
 			e.printStackTrace();
 			throw e;
 		}
-                System.out.println(new String(arr));
-                empty_arr(str.length(), arr);															// name
-		System.out.println(new String(arr));
-                pac = new ConcurrentHashMap<String, String>();
+        empty_arr(str.length(), arr);															// name
+		pac = new ConcurrentHashMap<String, String>();
 		pac.put("UName", this.user_name);
 		str = Packer.pack("NodeI", "03", pac);
 		server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send user

@@ -139,8 +139,7 @@ public class Packer {
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new HashMap<String,String>();
-                System.out.println(table);
-		try{
+        try{
 			map = gson.fromJson(table,t);
 		}
 		catch(JsonSyntaxException e){
