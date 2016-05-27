@@ -1,5 +1,3 @@
-package data_transferor;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -29,7 +27,7 @@ import com.barchart.udt.net.NetOutputStreamUDT;
  */
 
 /**
- * @author wzy
+ * @author wzy, ydz
  *
  */
 public class Node {
@@ -123,7 +121,7 @@ public class Node {
 			pac = new ConcurrentHashMap<String, String>();
 			pac.put("Insertion", "Insertion");
 			str = Packer.pack("NodeI", "00", pac);
-			server.send(str.getBytes(Charset.forName("ISO-8859-1")));// Insertion
+ 			server.send(str.getBytes(Charset.forName("ISO-8859-1")));// Insertion
 			server.receive(arr);
 			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 			pac = Packer.unpack(str);
@@ -136,11 +134,13 @@ public class Node {
 			e.printStackTrace();
 			throw e;
 		}
-		pac = new ConcurrentHashMap<String, String>();
+                System.out.println(new String(arr));
+                empty_arr(str.length(), arr);															// name
+		System.out.println(new String(arr));
+                pac = new ConcurrentHashMap<String, String>();
 		pac.put("UName", this.user_name);
 		str = Packer.pack("NodeI", "03", pac);
 		server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send user
-																	// name
 		server.receive(arr);// receive node and user name table
 		str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 		try {
@@ -160,7 +160,7 @@ public class Node {
 		node_thread = new Thread(new NodeThread(this));
 		node_thread.start();
 		server_link2_thread = new Thread(new ServerAccepter(this));
-		server_link_thread.start();
+		server_link2_thread.start();
 		server_link_thread = new Thread(new ServerLink(this));
 		server_link_thread.start();
 	}
@@ -182,4 +182,10 @@ public class Node {
 			throw new IllegalArgumentException("The destination isn't exist.");
 		}
 	}
+        private void empty_arr(int length, byte arr[])
+        {
+            for (int i = 0; i < length; i++) {
+                arr[i] = ' ';
+            }
+        }
 }

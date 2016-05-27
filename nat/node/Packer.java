@@ -6,12 +6,13 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
+
 /**
  * 
  */
 
 /**
- * @author 李亞希
+ * @author 李亞希, ydz
  *
  */
 
@@ -61,12 +62,12 @@ public class Packer {
 	 */
 	static public String pack(String Type, String Type_d, Map<String, String> pac) throws NodeException {
 		Gson gson = new Gson();
-		String json = new String();
-		if (!Type.equals("LinkE")) {
+		String json;
+		if (!Type.equals("LinkE") && !Type.equals("NodeI")) {
 			throw new NodeException("包的type类型不对");
-		} else if (!Type_d.equals("01") && !Type_d.equals("04")) {
+		} else if (Type.equals("LinkE") && !Type_d.equals("01") && !Type_d.equals("04") || Type.equals("NodeI") && !Type_d.equals("00") && !Type_d.equals("03")) {
 			throw new NodeException("包的type_d类型不对");
-		} else if (!pac.containsKey("ID") || pac.size() != 1) {
+		} else if ((Type.equals("LinkE") && !pac.containsKey("ID")) || ((Type.equals("NodeI") && Type_d.equals("00") && !pac.containsKey("Insertion")) || Type.equals("NodeI") && Type_d.equals("03") && !pac.containsKey("UName")) || pac.size() != 1 ) {
 			throw new NodeException("包的结构不对");
 		}
 		pac.put("type", Type);
@@ -138,6 +139,7 @@ public class Packer {
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new HashMap<String,String>();
+                System.out.println(table);
 		try{
 			map = gson.fromJson(table,t);
 		}
