@@ -27,7 +27,6 @@ class NodeThread implements Runnable {
 	 */
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
 		while (true) {
 			while (!node.messages_from_server.get("Node").isEmpty()) {
 				Map<String, String> link_establish = node.messages_from_server.get("Node").poll();
