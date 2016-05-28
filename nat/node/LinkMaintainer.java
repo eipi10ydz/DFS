@@ -1,4 +1,5 @@
 package data_transferor;
+
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -42,7 +43,10 @@ class LinkMaintainer implements Runnable {
 		while (true) {
 			// check link timers
 			link_timers.forEach((nodeID, timer) -> {
-				if (timer.isExpired() && node.nodeIDs.contains(nodeID)) {
+				if (!node.nodeIDs.contains(nodeID)) {// the peer node has
+														// dropped
+					link_timers.remove(nodeID);
+				} else if (timer.isExpired()) {
 					try {
 						if (establish_link_m(nodeID)) {
 							link_timers.remove(nodeID);
@@ -50,6 +54,9 @@ class LinkMaintainer implements Runnable {
 							timer.postpone(20000 * timer.getCnt());
 							timer.start();
 						}
+					} catch (NodeException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					} catch (ExceptionUDT e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -59,7 +66,8 @@ class LinkMaintainer implements Runnable {
 			// check if new node inserted
 			while (!node.node_inserted_lm.isEmpty())
 				new_link_timer(node.node_inserted_lm.poll());
-			while (!node.node_deleted_lm.isEmpty()) {// check if node deleted
+			// check if node deleted
+			while (!node.node_deleted_lm.isEmpty()) {
 				String nodeID = node.node_deleted_lm.poll();
 				if (node.links_p.containsKey(nodeID)) {
 					node.links_p_t.get(nodeID).interrupt();
@@ -82,14 +90,32 @@ class LinkMaintainer implements Runnable {
 					pac.put("Connectivity", "false");
 					try {
 						str = Packer.pack("LinkC", pac);
-					} catch (NodeException e) {
-						// TODO Auto-generated catch block
+					} catch (NodeException e) {// just used for debug
 						e.printStackTrace();
 					}
+					SocketUDT server = null;
 					try {
-						node.server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+						server = new SocketUDT(TypeUDT.STREAM);
+						server.setBlocking(true);
+						node.server_link_lock.lock();
+						server.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
+						server.connect(new InetSocketAddress(node.server_host, node.server_port));
+						try {
+							server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																						// packetLinkC:false
-					} catch (Exception e) {
+						} catch (ExceptionUDT e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} finally {
+							try {
+								server.close();
+							} catch (ExceptionUDT e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							node.server_link_lock.unlock();
+						}
+					} catch (ExceptionUDT e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
@@ -111,6 +137,7 @@ class LinkMaintainer implements Runnable {
 				}
 			}
 		}
+
 	}
 
 	/**
@@ -122,6 +149,9 @@ class LinkMaintainer implements Runnable {
 				if (!establish_link_m(nodeID)) {
 					new_link_timer(nodeID);
 				}
+			} catch (NodeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			} catch (ExceptionUDT e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -134,41 +164,47 @@ class LinkMaintainer implements Runnable {
 	 * @param ID_p
 	 * @return
 	 * @throws ExceptionUDT
+	 * @throws NodeException
 	 */
-	private boolean establish_link_m(String ID_p) throws ExceptionUDT {
+	private boolean establish_link_m(String ID_p) throws NodeException, ExceptionUDT {
 		if (node.ID.equals(ID_p) || !node.nodeIDs.contains(ID_p) || node.links_p.containsKey(ID_p))
 			return false;// TODO Something wrong
 		byte arr[] = new byte[1024];
 		String str = new String();
+		Map<String, String> pac;
 		String IP_p = new String();
 		int Port_p = 0;
+		SocketUDT server = new SocketUDT(TypeUDT.STREAM);
+		server.setBlocking(true);
 		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
 		sock.setBlocking(true);
-		node.server_link_count.incrementAndGet();
 		node.server_link_lock.lock();
 		try {
-			Map<String, String> pac = new ConcurrentHashMap<String, String>();
+			server.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
+			server.connect(new InetSocketAddress(node.server_host, node.server_port));
+			pac = new ConcurrentHashMap<String, String>();
 			pac.put("ID", ID_p);
 			try {
 				str = Packer.pack("LinkE", "01", pac);
-			} catch (NodeException e1) {
-				// TODO Auto-generated catch block
+			} catch (NodeException e1) {// just used for debug
 				e1.printStackTrace();
 			}
-			node.server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
-																			// packet
-																			// LinkE01
-			node.server.receive(arr);// receive packet LinkE03
+			server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																		// packet
+																		// LinkE01
+			server.receive(arr);// receive packet LinkE03
 			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+			node.empty_arr(str.length(), arr);
 			pac = Packer.unpack(str);
-			if (pac.get("type").equals("ERR")) {
+			if (pac.get("type").equals("ERR")) {// another Node is trying to
+												// connect with ID_p
+				try {
+					server.close();
+				} catch (ExceptionUDT e) {
+					e.printStackTrace();
+				}
 				node.server_link_lock.unlock();
-				node.server_link_count.decrementAndGet();
 				return false;
-			}
-			if (!(pac.get("type").equals("LinkE")&&pac.get("type_d").equals("03")))
-			{
-				throw new NodeException("Wrong packet" + pac.toString());
 			}
 			IP_p = pac.get("IP");
 			Port_p = Integer.parseInt(pac.get("Port"));
@@ -183,23 +219,25 @@ class LinkMaintainer implements Runnable {
 				pac.put("Connectivity", "false");
 				try {
 					str = Packer.pack("LinkC", pac);
-				} catch (NodeException e1) {
-					// TODO Auto-generated catch block
+				} catch (NodeException e1) {// just used for debug
 					e1.printStackTrace();
 				}
-				node.server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
-																				// packet
-																				// LinkC:false
+				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																			// packet
+																			// LinkC:false
+				try {
+					server.close();
+				} catch (ExceptionUDT e1) {
+					e1.printStackTrace();
+				}
 				node.server_link_lock.unlock();
-				node.server_link_count.decrementAndGet();
 				return false;
 			}
 			pac = new ConcurrentHashMap<String, String>();
 			pac.put("ID", node.ID);
 			try {
 				str = Packer.pack("LinkE", "04", pac);
-			} catch (NodeException e) {
-				// TODO Auto-generated catch block
+			} catch (NodeException e) {// just used for debug
 				e.printStackTrace();
 			}
 			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
@@ -212,21 +250,25 @@ class LinkMaintainer implements Runnable {
 			pac.put("Connectivity", "true");
 			try {
 				str = Packer.pack("LinkC", pac);
-			} catch (NodeException e) {
+			} catch (NodeException e) {// just used for debug
+				e.printStackTrace();
+			}
+			server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																		// packet
+																		// LinkC:true
+		} catch (ExceptionUDT e) {
+			sock.close();
+			throw e;
+		} catch (NodeException e) {
+			throw e;
+		} finally {
+			try {
+				server.close();
+			} catch (ExceptionUDT e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			node.server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
-																			// packet
-																			// LinkC:true
-		} catch (ExceptionUDT e) {
-			throw e;
-		} catch (NodeException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
 			node.server_link_lock.unlock();
-			node.server_link_count.decrementAndGet();
 		}
 		node.links_p.put(ID_p, sock);
 		node.links_p_t.put(ID_p, new Thread(new NodeLink(ID_p, sock, node)));
@@ -255,59 +297,81 @@ class LinkMaintainer implements Runnable {
 			node.links_p.remove(ID_p);
 		}
 		byte arr[] = new byte[1024];
-		Map<String, String> pac;
 		String str = new String();
+		Map<String, String> pac;
+		SocketUDT server = new SocketUDT(TypeUDT.STREAM);
+		server.setBlocking(true);
 		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
 		sock.setBlocking(true);
-		sock.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
-		sock.setRendezvous(true);
+		node.server_link_lock.lock();
 		try {
-			sock.connect(new InetSocketAddress(IP_p, Port_p));
-		} catch (ExceptionUDT e) {
-			pac = new ConcurrentHashMap<String, String>();
-			pac.put("ID", ID_p);
-			pac.put("Connectivity", "false");
+			server.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
+			server.connect(new InetSocketAddress(node.server_host, node.server_port));
+			sock.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
+			sock.setRendezvous(true);
 			try {
-				str = Packer.pack("LinkC", pac);
-			} catch (NodeException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			node.server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+				sock.connect(new InetSocketAddress(IP_p, Port_p));
+			} catch (ExceptionUDT e) {
+				pac = new ConcurrentHashMap<String, String>();
+				pac.put("ID", ID_p);
+				pac.put("Connectivity", "false");
+				try {
+					str = Packer.pack("LinkC", pac);
+				} catch (NodeException e1) {// just used for debug
+					e1.printStackTrace();
+				}
+				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																			// packet
 																			// LinkC:false
-			return false;
-		}
-		sock.receive(arr);// receive packet LinkE04
-		// TODO
-		pac = new ConcurrentHashMap<String, String>();
-		pac.put("ID", node.ID);
-		try {
-			str = Packer.pack("LinkE", "04", pac);
-		} catch (NodeException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send packet
-																// LinkE04
-		// doesn't need node.server_link_lock.lock()
-		pac = new ConcurrentHashMap<String, String>();
-		pac.put("ID", ID_p);
-		pac.put("Connectivity", "true");
-		try {
-			str = Packer.pack("LinkC", pac);
-		} catch (NodeException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		node.server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+				try {
+					server.close();
+				} catch (ExceptionUDT e1) {
+					e1.printStackTrace();
+				}
+				node.server_link_lock.unlock();
+				return false;
+			}
+			sock.receive(arr);// receive packet LinkE04
+			// TODO
+			pac = new ConcurrentHashMap<String, String>();
+			pac.put("ID", node.ID);
+			try {
+				str = Packer.pack("LinkE", "04", pac);
+			} catch (NodeException e) {// just used for debug
+				e.printStackTrace();
+			}
+			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																	// packet
+																	// LinkE04
+
+			pac = new ConcurrentHashMap<String, String>();
+			pac.put("ID", ID_p);
+			pac.put("Connectivity", "true");
+			try {
+				str = Packer.pack("LinkC", pac);
+			} catch (NodeException e) {// just used for debug
+				e.printStackTrace();
+			}
+			server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
 																		// LinkC:true
+		} catch (ExceptionUDT e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				server.close();
+			} catch (ExceptionUDT e) {
+				e.printStackTrace();
+			}
+			node.server_link_lock.unlock();
+		}
 		node.links_p.put(ID_p, sock);
 		node.links_p_t.put(ID_p, new Thread(new NodeLink(ID_p, sock, node)));
 		node.links_p_t.get(ID_p).start();
 		node.links_p_l.put(ID_p, new ReentrantLock());
 		return true;
+
 	}
 
 	/**
@@ -318,7 +382,7 @@ class LinkMaintainer implements Runnable {
 			return;
 		if (!node.nodeIDs.contains(nodeID))
 			return;
-		Timer timer = new Timer(10000, 3600000);// TODO
+		Timer timer = new Timer(10000, 3600000);
 		timer.start();
 		link_timers.put(nodeID, timer);
 		return;
