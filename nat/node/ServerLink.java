@@ -1,8 +1,12 @@
 package data_transferor;
+
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
 
 import com.barchart.udt.ExceptionUDT;
+import com.barchart.udt.SocketUDT;
+import com.barchart.udt.TypeUDT;
 
 /**
  * 
@@ -32,18 +36,24 @@ class ServerLink implements Runnable {
 	public void run() {
 		byte[] arr = new byte[1024];
 		String str = new String();
+		String tmp;
 		Map<String, String> pac;
-		while (true) {
-			if (node.server_link_count.get() == 0) {// inaccurate: When no
-													// thread wants to use
-													// node.server
-				node.server_link_lock.lock();
+		SocketUDT server;
+		try {
+			server = new SocketUDT(TypeUDT.STREAM);
+			server.setBlocking(true);
+			server.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
+			server.listen(10);
+			SocketUDT server_cnnt = null;
+			while (true) {
 				try {
-					node.server.setSoTimeout(1);
-					node.server.receive(arr);
+					arr = new byte[1024];
+					server_cnnt = server.accept();
+					server_cnnt.setSoTimeout(100);
+					server_cnnt.receive(arr);
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 					pac = Packer.unpack(str);
-					String tmp = null;
+					tmp = null;
 					switch (pac.get("type")) {
 					case ("NodeI"):
 					case ("NodeD"):
@@ -61,10 +71,12 @@ class ServerLink implements Runnable {
 						throw new NodeException("Unknown type" + pac.toString());
 					}
 					node.messages_from_server.get(tmp).add(pac);
+					server_cnnt.close();
 				} catch (ExceptionUDT e) {
 					switch (e.getError().getCode()) {
 					case (2001):
-						// TODO try to reestablish
+						break;
+					case (6002):
 						break;
 					case (6003):
 						break;
@@ -76,17 +88,14 @@ class ServerLink implements Runnable {
 					e.printStackTrace();
 				} finally {
 					try {
-						node.server.setSoTimeout(10000);
+						server_cnnt.close();
 					} catch (ExceptionUDT e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
 					}
-					node.server_link_lock.unlock();
 				}
 			}
-
-			// TODO
+		} catch (ExceptionUDT e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 	}
-
 }
