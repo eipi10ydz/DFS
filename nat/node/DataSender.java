@@ -61,6 +61,7 @@ class DataSender implements Callable<Boolean> {
 					try {
 						node.links_p.get(next_hop).send(str.getBytes(Charset.forName("ISO-8859-1")));
 						node.links_p_l.get(next_hop).unlock();
+						// TODO
 						return true;
 					} catch (ExceptionUDT e) {
 						node.links_p_l.get(next_hop).unlock();
