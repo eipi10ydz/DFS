@@ -1,3 +1,5 @@
+package Judge_Pac;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
@@ -6,13 +8,12 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
-
 /**
  * 
  */
 
 /**
- * @author æäºå¸Œ, ydz
+ * @author Àî†Ï£
  *
  */
 
@@ -29,7 +30,7 @@ public class Packer {
 		switch(Type){
 		 	case "LinkC" :
 		 		if (!pac.containsKey("ID") || !pac.containsKey("Connectivity") || pac.size() != 2) {
-					throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
+					throw new NodeException("°üµÄ½á¹¹²»¶Ô");
 		 		}
 				else{
 					pac.put("type", Type);
@@ -38,10 +39,10 @@ public class Packer {
 				}
 		 	case "Data" :
 		 		if(!pac.containsKey("From")||!pac.containsKey("To")||!pac.containsKey("Content")){
-		 			throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
+		 			throw new NodeException("°üµÄ½á¹¹²»¶Ô");
 		 		}
 		 		else if(pac.size() != 3){
-		 			throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
+		 			throw new NodeException("°üµÄ½á¹¹²»¶Ô");
 		 		}
 		 		else{
 		 			pac.put("type", Type);
@@ -49,7 +50,7 @@ public class Packer {
 					return json;
 		 		}
 		 	default:
-		 		throw new NodeException("typeç±»å‹ä¸å¯¹");
+		 		throw new NodeException("typeÀàĞÍ²»¶Ô");
 		}
 	}
 
@@ -62,18 +63,49 @@ public class Packer {
 	 */
 	static public String pack(String Type, String Type_d, Map<String, String> pac) throws NodeException {
 		Gson gson = new Gson();
-		String json;
-		if (!Type.equals("LinkE") && !Type.equals("NodeI")) {
-			throw new NodeException("åŒ…çš„typeç±»å‹ä¸å¯¹");
-		} else if (Type.equals("LinkE") && !Type_d.equals("01") && !Type_d.equals("04") || Type.equals("NodeI") && !Type_d.equals("00") && !Type_d.equals("03")) {
-			throw new NodeException("åŒ…çš„type_dç±»å‹ä¸å¯¹");
-		} else if ((Type.equals("LinkE") && !pac.containsKey("ID")) || ((Type.equals("NodeI") && Type_d.equals("00") && !pac.containsKey("Insertion")) || Type.equals("NodeI") && Type_d.equals("03") && !pac.containsKey("UName")) || pac.size() != 1 ) {
-			throw new NodeException("åŒ…çš„ç»“æ„ä¸å¯¹");
+		String json = new String();
+		switch(Type){
+		 	case "LinkE" :
+		 		if (!Type_d.equals("01") && !Type_d.equals("04")) {
+					throw new NodeException("°üµÄtype_dÀàĞÍ²»¶Ô");
+		 		}
+		 		else if (!pac.containsKey("ID") || pac.size() != 1) {
+		 			throw new NodeException("°üµÄ½á¹¹²»¶Ô");
+		 		}
+		 		else{
+					pac.put("type", Type);
+					pac.put("type_d", Type_d);
+					json = gson.toJson(pac);
+					return json;
+		 		}
+		 	case "NodeI" :
+		 		switch(Type_d){
+		 			case "00" :
+		 				if(!pac.containsKey("Insertion") || pac.size() != 1){
+		 					throw new NodeException("°üµÄ½á¹¹²»¶Ô");
+		 				}
+		 				else{
+		 					pac.put("type", Type);
+							pac.put("type_d", Type_d);
+							json = gson.toJson(pac);
+							return json;
+		 				}
+		 			case "03" :
+		 				if(!pac.containsKey("UName") || pac.size() != 1){
+		 					throw new NodeException("°üµÄ½á¹¹²»¶Ô");
+		 				}
+		 				else{
+		 					pac.put("type", Type);
+							pac.put("type_d", Type_d);
+							json = gson.toJson(pac);
+							return json;
+		 				}
+		 			default :
+						throw new NodeException("°üµÄtype_dÀàĞÍ²»¶Ô");
+		 		}
+		 	default:
+		 		throw new NodeException("typeÀàĞÍ²»¶Ô");
 		}
-		pac.put("type", Type);
-		pac.put("type_d", Type_d);
-		json = gson.toJson(pac);
-		return json;
 	}
 	
 	static public boolean check_pack(Map<String, String> map){
@@ -139,35 +171,35 @@ public class Packer {
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new HashMap<String,String>();
-        try{
+		try{
 			map = gson.fromJson(table,t);
 		}
 		catch(JsonSyntaxException e){
 			e.printStackTrace();
 		}
 		if(map == null){
-			throw new NodeException("è¡¨ä¸ºç©º");
+			throw new NodeException("±íÎª¿Õ");
 		}
 		else if (!map.containsKey("type") ){
-			throw new NodeException("typeç±»å‹ä¸å¯¹");
+			throw new NodeException("typeÀàĞÍ²»¶Ô");
 		}
 		else if (!map.get("type").equals("NodeT")){
-			throw new NodeException("typeç±»å‹ä¸å¯¹");
+			throw new NodeException("typeÀàĞÍ²»¶Ô");
 		}
 		else if (!map.containsKey("cnt") ){
-			throw new NodeException("æ— cnt");
+			throw new NodeException("ÎŞcnt");
 		}
 		String count = new String();
 		count = map.get("cnt");
         int cnt = Integer.parseInt(count);
         if(map.size() != 2+cnt*2 ){
-        	throw new NodeException("å†…å®¹æ•°é‡ä¸å¯¹");
+        	throw new NodeException("ÄÚÈİÊıÁ¿²»¶Ô");
         }
         String s1 = new String("UName_"); 
         String s2 = new String("ID_");
     	for(int i = 1 ;i <= cnt ;i++){
          	if(!map.containsKey(s1+i)||!map.containsKey(s2+i)){
-         		throw new NodeException("åŒ…å†…å®¹ä¸å…¨");
+         		throw new NodeException("°üÄÚÈİ²»È«");
          	}
         }
     	return map;
@@ -178,15 +210,15 @@ public class Packer {
 	 * @return
 	 * @throws NodeException
 	 */
-	static public Map<String, String> unpack(String pac) throws NodeException{
+	static public Map<String, String> unpack(String pac) throws PackException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new HashMap<String,String>();
 		try {
-			map = gson.fromJson(pac.trim(), t);
+			map = gson.fromJson(pac, t);
 		}
 		catch(JsonSyntaxException e){
-			throw new NodeException("è§£æå¤±è´¥");
+			throw new PackException("½âÎöÊ§°Ü");
 		}
 		return map;
 	}
