@@ -1,6 +1,4 @@
-package Judge_Pac;
-
-import com.google.gson.Gson;
+﻿import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
@@ -29,7 +27,8 @@ public class Packer {
 		String json = new String();
 		switch(Type){
 		 	case "LinkC" :
-		 		if (!pac.containsKey("ID") || !pac.containsKey("Connectivity") || pac.size() != 2) {
+		 		if (!pac.containsKey("ID") || !pac.containsKey("ID_source") || 
+		 								!pac.containsKey("Connectivity") || pac.size() != 3) {
 					throw new NodeException("包的结构不对");
 		 		}
 				else{
@@ -66,17 +65,39 @@ public class Packer {
 		String json = new String();
 		switch(Type){
 		 	case "LinkE" :
-		 		if (!Type_d.equals("01") && !Type_d.equals("04")) {
+		 		switch(Type_d){
+	 			case "01" :
+	 				if (!pac.containsKey("ID") || pac.size() != 1) {
+			 			throw new NodeException("包的结构不对");
+			 		}
+			 		else{
+						pac.put("type", Type);
+						pac.put("type_d", Type_d);
+						json = gson.toJson(pac);
+						return json;
+			 		}
+	 			case "04" :
+	 				if (!pac.containsKey("ID") || pac.size() != 1) {
+			 			throw new NodeException("包的结构不对");
+			 		}
+			 		else{
+						pac.put("type", Type);
+						pac.put("type_d", Type_d);
+						json = gson.toJson(pac);
+						return json;
+			 		}
+	 			case "02" :
+	 				if (!pac.containsKey("ID") || !pac.containsKey("ID_ret") || pac.size() != 2) {
+			 			throw new NodeException("包的结构不对");
+			 		}
+			 		else{
+						pac.put("type", Type);
+						pac.put("type_d", Type_d);
+						json = gson.toJson(pac);
+						return json;
+			 		}
+	 			default :
 					throw new NodeException("包的type_d类型不对");
-		 		}
-		 		else if (!pac.containsKey("ID") || pac.size() != 1) {
-		 			throw new NodeException("包的结构不对");
-		 		}
-		 		else{
-					pac.put("type", Type);
-					pac.put("type_d", Type_d);
-					json = gson.toJson(pac);
-					return json;
 		 		}
 		 	case "NodeI" :
 		 		switch(Type_d){
@@ -120,13 +141,24 @@ public class Packer {
 				if(!map.containsKey("type_d")){
 					return false;
 				}
-			    else if(!map.get("type_d").equals("03")){
-					return false;
+				else{
+					switch(map.get("type_d")){
+						case "03":
+							if(!map.containsKey("IP")||!map.containsKey("Port")||map.size() != 4){
+								return false;
+							}
+							else
+							return true;
+						case "05":
+							if(!map.containsKey("begin")||map.size() != 3){
+								return false;
+							}
+							else
+							return true;
+						default :
+							return false;
+					}
 				}
-				else if(!map.containsKey("IP")||!map.containsKey("Port")||map.size() != 4){
-					return false;
-				}
-				return true;
 			case "ERR" :
 				if(!map.containsKey("type_d")){
 					return false;
