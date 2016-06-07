@@ -3,9 +3,7 @@ import com.barchart.udt.SocketUDT;
 import com.barchart.udt.net.*;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.sun.jmx.remote.internal.ClientListenerInfo;
 import java.io.IOException;
-import static java.lang.Integer.parseInt;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -63,6 +61,7 @@ class MultiServerImplementation implements Runnable
     Map<String, HashMap.Entry<Client, Client>> keyMap = new HashMap<>();
     Map<HashMap.Entry<Client,Client>, String> record = new HashMap<>();
     Map<String, SocketUDT> nat_new = new HashMap<>();
+    Floyd_implementation fi;
     long clientNum = 0;
     SocketUDT serverSocket;
     Gson gson_fromJson;
@@ -71,11 +70,14 @@ class MultiServerImplementation implements Runnable
     Lock lock = new ReentrantLock();
     Date early = null;
     Type JSON_TYPE = new TypeToken<Map<String, String>>(){}.getType();
+    int mapVertices = 0;
     
 //    final String host = "10.104.13.233";
     final String host = "127.0.0.1";
     final int port = 23333;
+    final double INFINITY = 66666666;
     final int CLIENTNUM = 10;
+    final int MAX_CLIENT = 10;
     final String NAT_TYPE = "TNAT";
     
     public MultiServerImplementation() throws IOException 
@@ -83,6 +85,7 @@ class MultiServerImplementation implements Runnable
         this.gson_fromJson = new Gson();
         this.gson_toJson = new GsonBuilder().create();
         this.serverSocket = new NetServerSocketUDT().socketUDT();
+        this.fi = new Floyd_implementation(MAX_CLIENT);
         serverSocket.bind(new InetSocketAddress(host, port));
         serverSocket.listen(CLIENTNUM);
         early = new Date();
@@ -391,7 +394,44 @@ class MultiServerImplementation implements Runnable
         }
         sock.close();
     }
- 
+
+    public void config_map(Map<String, String> info, SocketUDT sock)
+    {
+        int ID = Integer.parseInt(info.get("ID"));
+        double RTT, bandwidth, lostRate, weight;
+        lock.lock();
+        ++this.mapVertices;
+        for(int i = 0; i < Integer.parseInt(info.get("cnt")); ++i)
+        {
+            if(info.get("RTT_" + i).trim().equals("Infinity"))
+                continue;
+            RTT = Double.parseDouble(info.get("RTT_" + i));
+            bandwidth = Double.parseDouble(info.get("bandwidth_" + i));
+            lostRate = Double.parseDouble(info.get("lostRate_" + i));
+            weight = 1.0 * RTT + 0.2 * lostRate + 1.0 * bandwidth;
+            this.fi.weight[ID][i] = this.fi.weight[i][ID] = weight;
+        }
+        this.fi.init();
+        this.fi.floyd();
+        lock.unlock();
+    }
+    
+    public void return_route(Map<String, String> info, SocketUDT sock)
+    {
+        List<Integer> best = new ArrayList<>();
+        this.fi.output_toList(Integer.parseInt(info.get("ID")), Integer.parseInt(info.get("ID_target")), best);
+        Map<String, String> sendBack;
+        sendBack = new HashMap<>();
+        if(this.fi.weight[Integer.parseInt(info.get("ID"))][Integer.parseInt(info.get("ID_target"))] == this.INFINITY)
+        {
+            //发送错误包，无法连接
+        }
+        else
+        {
+            //发送路径
+        }
+    }
+    
     public void record_info(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
         String connectivity = info.get("Connectivity");
@@ -525,5 +565,91 @@ class Client
     public String toString()
     {
         return this.userName + "\n" + this.ID + "\n" + this.IP_maintain + "\n" + this.port_maintain;
+    }
+}
+
+class Floyd_implementation
+{
+    public double [][] res;
+    public double [][] weight;
+    public int [][] path_temp;
+    double INF = 66666666;
+    public Floyd_implementation(int size)
+    {
+        this.res = new double[size][size];
+        this.weight = new double[size][size];
+        for(int i = 0; i < size; ++i)
+            for (int j = 0; j < size; j++)
+                this.res[i][j] = this.weight[i][j] = INF;
+        this.path_temp = new int[size][size];
+    }
+    
+    public void init()
+    {
+        for(int i = 0; i < res.length; ++i)
+            for(int j = 0; j < res.length; ++j)
+                res[i][j] = weight[i][j];
+    }
+    
+    public void floyd()
+    {
+        int i, j, k;
+        for(k = 0; k < this.res.length; ++k)
+            for(i = 0; i < this.res.length; ++i)
+                for(j = 0; j < this.res.length; ++j)
+                    if(this.res[i][k] + this.res[k][j] < this.res[i][j])
+                    {
+                        this.res[i][j] = this.res[i][k] + this.res[k][j];
+                        this.path_temp[i][j] = k;
+                    }
+    }
+    
+    public void output_toList(int i, int j, List<Integer> res)
+    {
+        res.add(i);
+        output_toList_implement(i, j, res);
+    }
+    
+    private int output_toList_implement(int i, int j, List<Integer> res)
+    {
+        if(i == j)
+            return i;
+        if(this.path_temp[i][j] == 0)
+        {   
+            res.add(j);
+            return j;
+        }
+        else
+        {
+            output_toList_implement(i, path_temp[i][j], res);
+            output_toList_implement(path_temp[i][j], j, res);
+        }
+        return 0;
+    }
+    
+    public void output(int i, int j)
+    {
+        if(i == j)return;
+        if(this.path_temp[i][j] == 0)
+            System.out.print(j + " ");
+        else
+        {
+            output(i, path_temp[i][j]);
+            output(path_temp[i][j], j);
+        }
+    }
+    
+    public void count()
+    {
+        for(int i = 0; i < this.res.length; ++i)
+            for(int j = 0; j < this.res.length; ++j)
+                if(this.path_temp[i][j] == INF || i == j)
+                    ;
+                else
+                {
+                    System.out.print(i + " ");
+                    output(i, j);
+                    System.out.println();
+                }
     }
 }
