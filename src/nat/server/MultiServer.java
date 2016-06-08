@@ -399,21 +399,31 @@ class MultiServerImplementation implements Runnable
     {
         int ID = Integer.parseInt(info.get("ID"));
         double RTT, bandwidth, lostRate, weight;
-        lock.lock();
-        ++this.mapVertices;
-        for(int i = 0; i < Integer.parseInt(info.get("cnt")); ++i)
+        try 
         {
-            if(info.get("RTT_" + i).trim().equals("Infinity"))
-                continue;
-            RTT = Double.parseDouble(info.get("RTT_" + i));
-            bandwidth = Double.parseDouble(info.get("bandwidth_" + i));
-            lostRate = Double.parseDouble(info.get("lostRate_" + i));
-            weight = 1.0 * RTT + 0.2 * lostRate + 1.0 * bandwidth;
-            this.fi.weight[ID][i] = this.fi.weight[i][ID] = weight;
+            lock.lock();
+            ++this.mapVertices;
+            for(int i = 0; i < Integer.parseInt(info.get("cnt")); ++i)
+            {
+                if(info.get("RTT_" + i).trim().equals("Infinity"))
+                    continue;
+                RTT = Double.parseDouble(info.get("RTT_" + i));
+                bandwidth = Double.parseDouble(info.get("bandwidth_" + i));
+                lostRate = Double.parseDouble(info.get("lostRate_" + i));
+                weight = 1.0 * RTT + 0.2 * lostRate + 1.0 * bandwidth;
+                this.fi.weight[ID][i] = this.fi.weight[i][ID] = weight;
+            }
+            this.fi.init();
+            this.fi.floyd();
+        } 
+        catch (Exception e) 
+        {
+        
         }
-        this.fi.init();
-        this.fi.floyd();
-        lock.unlock();
+        finally
+        {
+            lock.unlock();
+        }
     }
     
     public void return_route(Map<String, String> info, SocketUDT sock)
@@ -422,7 +432,7 @@ class MultiServerImplementation implements Runnable
         this.fi.output_toList(Integer.parseInt(info.get("ID")), Integer.parseInt(info.get("ID_target")), best);
         Map<String, String> sendBack;
         sendBack = new HashMap<>();
-        if(this.fi.weight[Integer.parseInt(info.get("ID"))][Integer.parseInt(info.get("ID_target"))] == this.INFINITY)
+        if(this.fi.res[Integer.parseInt(info.get("ID"))][Integer.parseInt(info.get("ID_target"))] == this.INFINITY)
         {
             //发送错误包，无法连接
         }
