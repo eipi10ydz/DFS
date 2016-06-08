@@ -1,4 +1,4 @@
-﻿import com.google.gson.Gson;
+import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
@@ -22,14 +22,14 @@ public class Packer {
 	 * @return
 	 * @throws NodeException
 	 */
-	static public String pack(String Type, Map<String, String> pac) throws NodeException {
+	static public String pack(String Type, Map<String, String> pac) throws PackException {
 		Gson gson = new Gson();
 		String json = new String();
 		switch(Type){
 		 	case "LinkC" :
-		 		if (!pac.containsKey("ID") || !pac.containsKey("ID_source") || 
+		 		if (!pac.containsKey("ID") || !pac.containsKey("ID_target") || 
 		 								!pac.containsKey("Connectivity") || pac.size() != 3) {
-					throw new NodeException("包的结构不对");
+					throw new PackException("包的结构不对");
 		 		}
 				else{
 					pac.put("type", Type);
@@ -38,10 +38,10 @@ public class Packer {
 				}
 		 	case "Data" :
 		 		if(!pac.containsKey("From")||!pac.containsKey("To")||!pac.containsKey("Content")){
-		 			throw new NodeException("包的结构不对");
+		 			throw new PackException("包的结构不对");
 		 		}
 		 		else if(pac.size() != 3){
-		 			throw new NodeException("包的结构不对");
+		 			throw new PackException("包的结构不对");
 		 		}
 		 		else{
 		 			pac.put("type", Type);
@@ -49,7 +49,7 @@ public class Packer {
 					return json;
 		 		}
 		 	default:
-		 		throw new NodeException("type类型不对");
+		 		throw new PackException("type类型不对");
 		}
 	}
 
@@ -60,15 +60,15 @@ public class Packer {
 	 * @return
 	 * @throws NodeException
 	 */
-	static public String pack(String Type, String Type_d, Map<String, String> pac) throws NodeException {
+	static public String pack(String Type, String Type_d, Map<String, String> pac) throws PackException {
 		Gson gson = new Gson();
 		String json = new String();
 		switch(Type){
 		 	case "LinkE" :
 		 		switch(Type_d){
 	 			case "01" :
-	 				if (!pac.containsKey("ID") || pac.size() != 1) {
-			 			throw new NodeException("包的结构不对");
+	 				if (!pac.containsKey("ID")|| !pac.containsKey("ID_target") || pac.size() != 2) {
+			 			throw new PackException("包的结构不对");
 			 		}
 			 		else{
 						pac.put("type", Type);
@@ -78,7 +78,7 @@ public class Packer {
 			 		}
 	 			case "04" :
 	 				if (!pac.containsKey("ID") || pac.size() != 1) {
-			 			throw new NodeException("包的结构不对");
+			 			throw new PackException("包的结构不对");
 			 		}
 			 		else{
 						pac.put("type", Type);
@@ -87,8 +87,8 @@ public class Packer {
 						return json;
 			 		}
 	 			case "02" :
-	 				if (!pac.containsKey("ID") || !pac.containsKey("ID_ret") || pac.size() != 2) {
-			 			throw new NodeException("包的结构不对");
+	 				if (!pac.containsKey("ID") || !pac.containsKey("ID_target") || pac.size() != 2) {
+			 			throw new PackException("包的结构不对");
 			 		}
 			 		else{
 						pac.put("type", Type);
@@ -97,13 +97,13 @@ public class Packer {
 						return json;
 			 		}
 	 			default :
-					throw new NodeException("包的type_d类型不对");
+					throw new PackException("包的type_d类型不对");
 		 		}
 		 	case "NodeI" :
 		 		switch(Type_d){
 		 			case "00" :
 		 				if(!pac.containsKey("Insertion") || pac.size() != 1){
-		 					throw new NodeException("包的结构不对");
+		 					throw new PackException("包的结构不对");
 		 				}
 		 				else{
 		 					pac.put("type", Type);
@@ -113,7 +113,7 @@ public class Packer {
 		 				}
 		 			case "03" :
 		 				if(!pac.containsKey("UName") || pac.size() != 1){
-		 					throw new NodeException("包的结构不对");
+		 					throw new PackException("包的结构不对");
 		 				}
 		 				else{
 		 					pac.put("type", Type);
@@ -122,10 +122,10 @@ public class Packer {
 							return json;
 		 				}
 		 			default :
-						throw new NodeException("包的type_d类型不对");
+						throw new PackException("包的type_d类型不对");
 		 		}
 		 	default:
-		 		throw new NodeException("type类型不对");
+		 		throw new PackException("type类型不对");
 		}
 	}
 	
@@ -144,7 +144,8 @@ public class Packer {
 				else{
 					switch(map.get("type_d")){
 						case "03":
-							if(!map.containsKey("IP")||!map.containsKey("Port")||map.size() != 4){
+							if(!map.containsKey("IP")||!map.containsKey("Port")||!map.containsKey("ID")
+																	||map.size() != 5){
 								return false;
 							}
 							else
