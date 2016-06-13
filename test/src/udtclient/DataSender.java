@@ -48,9 +48,8 @@ class DataSender implements Callable<Boolean> {
 		pac.put("Content", data);
 		try {
 			str = Packer.pack("Data", pac);
-		} catch (NodeException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (PackException e1) {// just used for debug
+			e1.printStackTrace();
 		}
 		try {
 			for (int i = 0; i != node.nodeIDs.size(); ++i) {

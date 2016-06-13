@@ -40,9 +40,11 @@ public class Node {
 	protected Set<String> nodeIDs;
 	protected Map<String, String> UName_ID;
 	protected Thread node_thread;
-
+        protected SocketUDT server;
 	protected InetAddress IP_local;
 
+        protected Thread link_thread;
+        
 	protected Queue<String> node_inserted_lm;
 	protected Queue<String> node_deleted_lm;
 	protected Thread link_maintainer_thread;
@@ -61,11 +63,10 @@ public class Node {
 	protected int server_port;
 	protected InputStream in_s;
 	protected OutputStream out_s;
-	protected ReentrantLock server_link_lock;
+	//protected ReentrantLock server_link_lock;
 	protected Thread server_link_thread;
 	protected Map<String, Queue<Map<String, String>>> messages_from_server;
 
-	protected Map<String, DataTransferor> data_arrived;
 	protected ExecutorService data_to_send;
 
 	/**
@@ -74,8 +75,9 @@ public class Node {
 	 * @param server_port
 	 * @throws ExceptionUDT
 	 * @throws NodeException
+	 * @throws PackException 
 	 */
-	public Node(String user_name, String server_host, int server_port) throws ExceptionUDT, NodeException, PackException {
+	public Node(String user_name, String server_host, int server_port) throws ExceptionUDT, PackException, NodeException {
 		this.user_name = user_name;
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
 		UName_ID = new ConcurrentHashMap<>();
@@ -93,8 +95,6 @@ public class Node {
 		messages_from_server.put("ERR", new ConcurrentLinkedQueue<Map<String, String>>());
 		this.server_host = server_host;
 		this.server_port = server_port;
-		server_link_lock = new ReentrantLock();
-		data_arrived = new ConcurrentHashMap<>();
 		data_to_send = Executors.newCachedThreadPool();
 		try {
 			IP_local = InetAddress.getLocalHost();
@@ -105,7 +105,7 @@ public class Node {
 		byte arr[] = new byte[1024];
 		String str = null;
 		Map<String, String> pac;
-		SocketUDT server = new SocketUDT(TypeUDT.STREAM);
+		this.server = new SocketUDT(TypeUDT.STREAM);
 		server.setBlocking(true);
 		server.connect(new InetSocketAddress(this.server_host, this.server_port));
 		IP_local_server = server.getLocalInetAddress();
@@ -116,7 +116,7 @@ public class Node {
 		pac.put("Insertion", "Insertion");
 		try {
 			str = Packer.pack("NodeI", "00", pac);
-		} catch (NodeException e) {// just used for debug
+		} catch (PackException e) {// just used for debug
 			e.printStackTrace();
 		}
 		server.send(str.getBytes(Charset.forName("ISO-8859-1")));// Insertion
@@ -129,7 +129,7 @@ public class Node {
 		pac.put("UName", this.user_name);
 		try {
 			str = Packer.pack("NodeI", "03", pac);
-		} catch (NodeException e) {// just used for debug
+		} catch (PackException e) {// just used for debug
 			e.printStackTrace();
 		}
 		server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send user
@@ -144,9 +144,11 @@ public class Node {
 			nodeIDs.add(pac.get(s2 + i));
 			UName_ID.put(pac.get(s1 + i), pac.get(s2 + i));
 		}
-                System.out.println("local:" + this.IP_local_server.toString() + ":" + this.Port_local_server);
-		link_maintainer_thread = new Thread(new LinkMaintainer(this));
+                LinkMaintainer lm = new LinkMaintainer(this);
+		link_maintainer_thread = new Thread(lm);
 		link_maintainer_thread.start();
+                link_thread = new Thread(new Link(this, lm));
+                link_thread.start();
 		node_thread = new Thread(new NodeThread(this));
 		node_thread.start();
 		server_link_thread = new Thread(new ServerLink(this));

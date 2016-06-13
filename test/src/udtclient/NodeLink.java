@@ -6,8 +6,6 @@ import java.util.concurrent.Future;
 
 import com.barchart.udt.ExceptionUDT;
 import com.barchart.udt.SocketUDT;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * 
@@ -54,7 +52,7 @@ class NodeLink implements Runnable {
 					pac = Packer.unpack(str);
 					if (pac.get("To").equals(node.ID)) {
 						final String content = pac.get("Content");
-						node.data_arrived.get(pac.get("From")).data.getAndUpdate((String data) -> data + content);
+						// TODO
 					} else {// Launch a new task and hold its result in
 							// node.send_results
 						Future<Boolean> result;
@@ -70,9 +68,10 @@ class NodeLink implements Runnable {
 						e.printStackTrace();
 						throw e;
 					}
-				} catch (PackException ex) {
-                                Logger.getLogger(NodeLink.class.getName()).log(Level.SEVERE, null, ex);
-                            }
+				} catch (PackException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		} catch (InterruptedException e) {
 		} catch (ExceptionUDT e) {

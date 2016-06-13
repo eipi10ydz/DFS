@@ -24,13 +24,14 @@ public class Packer {
 	 * @return
 	 * @throws NodeException
 	 */
-	static public String pack(String Type, Map<String, String> pac) throws NodeException {
+	static public String pack(String Type, Map<String, String> pac) throws PackException {
 		Gson gson = new Gson();
-		String json = new String();
+		String json;
 		switch(Type){
 		 	case "LinkC" :
-		 		if (!pac.containsKey("ID") || !pac.containsKey("Connectivity") || pac.size() != 2) {
-					throw new NodeException("包的结构不对");
+		 		if (!pac.containsKey("ID") || !pac.containsKey("ID_target") || 
+		 								!pac.containsKey("Connectivity") || pac.size() != 3) {
+					throw new PackException("包的结构不对");
 		 		}
 				else{
 					pac.put("type", Type);
@@ -39,10 +40,10 @@ public class Packer {
 				}
 		 	case "Data" :
 		 		if(!pac.containsKey("From")||!pac.containsKey("To")||!pac.containsKey("Content")){
-		 			throw new NodeException("包的结构不对");
+		 			throw new PackException("包的结构不对");
 		 		}
 		 		else if(pac.size() != 3){
-		 			throw new NodeException("包的结构不对");
+		 			throw new PackException("包的结构不对");
 		 		}
 		 		else{
 		 			pac.put("type", Type);
@@ -50,7 +51,7 @@ public class Packer {
 					return json;
 		 		}
 		 	default:
-		 		throw new NodeException("type类型不对");
+		 		throw new PackException("type类型不对");
 		}
 	}
 
@@ -61,28 +62,50 @@ public class Packer {
 	 * @return
 	 * @throws NodeException
 	 */
-	static public String pack(String Type, String Type_d, Map<String, String> pac) throws NodeException {
+	static public String pack(String Type, String Type_d, Map<String, String> pac) throws PackException {
 		Gson gson = new Gson();
-		String json = new String();
+		String json;
 		switch(Type){
 		 	case "LinkE" :
-		 		if (!Type_d.equals("01") && !Type_d.equals("04")) {
-					throw new NodeException("包的type_d类型不对");
-		 		}
-		 		else if (!pac.containsKey("ID") || pac.size() != 1) {
-		 			throw new NodeException("包的结构不对");
-		 		}
-		 		else{
-					pac.put("type", Type);
-					pac.put("type_d", Type_d);
-					json = gson.toJson(pac);
-					return json;
+		 		switch(Type_d){
+	 			case "01" :
+	 				if (!pac.containsKey("ID")|| !pac.containsKey("ID_target") || pac.size() != 2) {
+			 			throw new PackException("包的结构不对");
+			 		}
+			 		else{
+						pac.put("type", Type);
+						pac.put("type_d", Type_d);
+						json = gson.toJson(pac);
+						return json;
+			 		}
+	 			case "04" :
+	 				if (!pac.containsKey("ID") || pac.size() != 1) {
+			 			throw new PackException("包的结构不对");
+			 		}
+			 		else{
+						pac.put("type", Type);
+						pac.put("type_d", Type_d);
+						json = gson.toJson(pac);
+						return json;
+			 		}
+	 			case "02" :
+	 				if (!pac.containsKey("ID") || !pac.containsKey("ID_target") || pac.size() != 2) {
+			 			throw new PackException("包的结构不对");
+			 		}
+			 		else{
+						pac.put("type", Type);
+						pac.put("type_d", Type_d);
+						json = gson.toJson(pac);
+						return json;
+			 		}
+	 			default :
+					throw new PackException("包的type_d类型不对");
 		 		}
 		 	case "NodeI" :
 		 		switch(Type_d){
 		 			case "00" :
 		 				if(!pac.containsKey("Insertion") || pac.size() != 1){
-		 					throw new NodeException("包的结构不对");
+		 					throw new PackException("包的结构不对");
 		 				}
 		 				else{
 		 					pac.put("type", Type);
@@ -92,7 +115,7 @@ public class Packer {
 		 				}
 		 			case "03" :
 		 				if(!pac.containsKey("UName") || pac.size() != 1){
-		 					throw new NodeException("包的结构不对");
+		 					throw new PackException("包的结构不对");
 		 				}
 		 				else{
 		 					pac.put("type", Type);
@@ -101,10 +124,10 @@ public class Packer {
 							return json;
 		 				}
 		 			default :
-						throw new NodeException("包的type_d类型不对");
+						throw new PackException("包的type_d类型不对");
 		 		}
 		 	default:
-		 		throw new NodeException("type类型不对");
+		 		throw new PackException("type类型不对");
 		}
 	}
 	
@@ -120,13 +143,25 @@ public class Packer {
 				if(!map.containsKey("type_d")){
 					return false;
 				}
-			    else if(!map.get("type_d").equals("03")){
-					return false;
+				else{
+					switch(map.get("type_d")){
+						case "03":
+							if(!map.containsKey("IP")||!map.containsKey("Port")||!map.containsKey("ID")
+																	||map.size() != 5){
+								return false;
+							}
+							else
+							return true;
+						case "05":
+							if(!map.containsKey("begin")||map.size() != 3){
+								return false;
+							}
+							else
+							return true;
+						default :
+							return false;
+					}
 				}
-				else if(!map.containsKey("IP")||!map.containsKey("Port")||map.size() != 4){
-					return false;
-				}
-				return true;
 			case "ERR" :
 				if(!map.containsKey("type_d")){
 					return false;
@@ -170,7 +205,7 @@ public class Packer {
 	static public Map<String, String> Check_table(String table) throws NodeException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
-		Map<String, String> map = new HashMap<String,String>();
+		Map<String, String> map = new HashMap<>();
 		try{
 			map = gson.fromJson(table,t);
 		}
@@ -189,14 +224,14 @@ public class Packer {
 		else if (!map.containsKey("cnt") ){
 			throw new NodeException("无cnt");
 		}
-		String count = new String();
+		String count;
 		count = map.get("cnt");
         int cnt = Integer.parseInt(count);
         if(map.size() != 2+cnt*2 ){
         	throw new NodeException("内容数量不对");
         }
-        String s1 = new String("UName_"); 
-        String s2 = new String("ID_");
+        String s1 = "UName_"; 
+        String s2 = "ID_";
     	for(int i = 1 ;i <= cnt ;i++){
          	if(!map.containsKey(s1+i)||!map.containsKey(s2+i)){
          		throw new NodeException("包内容不全");
@@ -213,7 +248,7 @@ public class Packer {
 	static public Map<String, String> unpack(String pac) throws PackException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
-		Map<String, String> map = new HashMap<String,String>();
+		Map<String, String> map = new HashMap<>();
 		try {
 			map = gson.fromJson(pac, t);
 		}

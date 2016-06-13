@@ -405,7 +405,50 @@ class MultiServerImplementation implements Runnable
         }
         sock.close();
     }
-
+/*    
+    public void key_send(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
+    {
+        String destination = info.get("ID");
+        String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
+        String port_from = sock.getRemoteInetPort() + "";
+        Client client_from = find_client(IP_from, port_from);
+        Client client_to = find_client(destination);
+        if(client_to == null || client_from == null)
+        {
+            log("Not online...");
+        }
+        else
+        {
+            int temp = (client_to.userName + client_from.userName).hashCode();
+            if(temp < 0)
+                temp = -temp;
+            String key = temp + "";
+            Map<String, String> send_info = new HashMap<>();
+            send_info.put("type", "LinkE");
+            send_info.put("type_d", "02");
+            send_info.put("ID", client_from.ID);
+            send_info.put("key", key);
+            SocketUDT sock_to = new NetSocketUDT().socketUDT();
+            try
+            {
+                sock_to.connect(new InetSocketAddress(client_to.IP, parseInt(client_to.port)));
+            }
+            catch(ExceptionUDT ex)
+            {
+                //应该向client_from发送错误包
+                log("cannot connect...nat_request failed...");
+                return;
+            }
+            sock_to.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+            sock_to.close();
+            send_info.replace("ID", client_to.ID);
+            sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
+            Map.Entry<Client, Client> pair = new AbstractMap.SimpleEntry<>(client_from, client_to);
+            this.keyMap.put(key, pair);
+        }
+        sock.close();
+    }
+*/  
         public void map_change(Map<String, String> info, SocketUDT sock) {
         int ID = Integer.parseInt(info.get("ID"));
         double RTT, bandwidth, lostRate, weight;
@@ -660,6 +703,54 @@ class Client
     }
 }
 
+
+/*
+class long_link_implementation implements Runnable
+{
+    Client client;
+    Gson gson;
+    MultiServerImplementation server;
+    byte [] info;
+    Type JSON_TYPE = new TypeToken<Map<String, String>>(){}.getType();
+    public long_link_implementation(Client client, MultiServerImplementation mt)
+    {
+        this.client = client;
+        this.gson = new Gson();
+        this.server = mt;
+    }
+
+    @Override
+    public void run() 
+    {
+        Map<String, String> heartBeat = new HashMap<>();
+        heartBeat.put("type", "LinkM");
+        heartBeat.put("content", "test");
+        while(true)
+        {
+            try
+            {
+                info = new byte[1024];
+                client.link_maintain.receive(info);
+                Map<String, String> natInfo = this.gson.fromJson((new String(info)).trim(), this.JSON_TYPE);
+                String destination = natInfo.get("ID");
+                client = this.server.find_client(destination);
+                if(client == null)
+                    System.out.println("cannot connect destination...nat failed...");
+                else
+                {
+                    
+                }
+            }
+            catch (ExceptionUDT e) 
+            {
+                System.out.println("cannot receive...no nat request...");
+            }
+        }
+        
+    }
+    
+}
+*/
 class Floyd_implementation {
 
     public double[][] res;

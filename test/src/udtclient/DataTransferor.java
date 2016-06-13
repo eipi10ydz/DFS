@@ -35,7 +35,7 @@ public class DataTransferor implements Serializable {
 		this.node = node;
 		this.peer = node.UName_ID.get(peer);
 		this.data.set(new String());
-		node.data_arrived.put(this.peer, this);
+//		node.data_arrived.put(this.peer, this);
 	}
 
 	/**
