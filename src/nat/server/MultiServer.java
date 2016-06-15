@@ -487,7 +487,7 @@ class MultiServerImplementation implements Runnable
         int from = Integer.parseInt(info.get("ID"));
         int to = Integer.parseInt(info.get("ID_target"));
         //未完待续
-        int [] able=new int[mapVertices];
+        int [] able=new int[mapVertices];//用来存和from直连的顶点
         int count = 0;
         for (int i = 0; i < mapVertices; i++) {
             if (fi.weight[from][i] > 0 || fi.weight[from][i] != INFINITY) {
@@ -497,21 +497,24 @@ class MultiServerImplementation implements Runnable
         int[] a = new int[count];//用一个类似bool数组来表示是否算过，0代表算过
 
         double min = INFINITY;
-        int temp=(int)INFINITY;
+        int temp = (int) INFINITY;//循环时每次选出的顶点编号
+        int chosen = (int) INFINITY;//循环时每次选出的顶点在able数组中的编号 
         for (int i = 0; i < count; i++) {
             best = new ArrayList<>();
             for (int j = 0; j < count; j++) {
-                if (a[j]!=0) {
-                    if(fi.weight[from][able[j]]+fi.res[able[j]][to]<min)
-                        min=fi.weight[from][able[j]]+fi.res[able[j]][to];
-                        temp=able[j];
-                        a[j]=1;
+                if (a[j] != 0) {
+                    if (fi.weight[from][able[j]] + fi.res[able[j]][to] < min) {
+                        min = fi.weight[from][able[j]] + fi.res[able[j]][to];
+                        temp = able[j];
+                        chosen = j;
+                    }
                 }
             }
+            a[chosen] = 1;
             best.add(from);
-            this.fi.output_toList(temp,to,best);
+            this.fi.output_toList(temp, to, best);
             route_list.add(best);
-            }//得到排好序的route_list,最短的在最前面,未完待续        
+        }//得到排好序的route_list,最短的在最前面      
                  
        //this.fi.output_toList(Integer.parseInt(info.get("ID")), Integer.parseInt(info.get("ID_target")), best);
        // Map<String, String> sendBack;
