@@ -61,6 +61,9 @@ class ServerLink implements Runnable {
 					case ("LinkC"):
 						tmp = "Link";
 						break;
+					case ("DataF"):
+						tmp = "Data";
+						break;
 					case ("ERR"):
 						tmp = "ERR";
 						break;

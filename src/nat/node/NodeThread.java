@@ -1,4 +1,5 @@
 package data_transferor;
+
 import java.util.Map;
 
 /**
@@ -32,12 +33,20 @@ class NodeThread implements Runnable {
 				Map<String, String> pac = node.messages_from_server.get("Node").poll();
 				if (pac.get("type").equals("NodeI")) {
 					if (pac.get("type_d").equals("02")) {
-						node_inserted(pac.get("ID"),pac.get("UName"),pac.get("LIP"));
+						node_inserted(pac.get("ID"), pac.get("UName"), pac.get("LIP"));
 					} else {
 						// TODO Something wrong
 					}
 				} else if (pac.get("type").equals("NodeD")) {
 					node_deleted(pac.get("ID"));
+				} else {
+					// TODO Something wrong
+				}
+			}
+			while (!node.messages_from_server.get("Data").isEmpty()) {
+				Map<String, String> pac = node.messages_from_server.get("Data").poll();
+				if (pac.get("type").equals("DataF")) {
+					DataSender.finished_list.add(Integer.parseInt(pac.get("No")));
 				} else {
 					// TODO Something wrong
 				}
