@@ -95,6 +95,7 @@ public class Node {
 		messages_from_server = new ConcurrentHashMap<>();
 		messages_from_server.put("Node", new ConcurrentLinkedQueue<Map<String, String>>());
 		messages_from_server.put("Link", new ConcurrentLinkedQueue<Map<String, String>>());
+		messages_from_server.put("Data", new ConcurrentLinkedQueue<Map<String, String>>());
 		messages_from_server.put("ERR", new ConcurrentLinkedQueue<Map<String, String>>());
 		this.server_host = server_host;
 		this.server_port = server_port;
@@ -105,7 +106,7 @@ public class Node {
 			IP_local = null;
 			e.printStackTrace();
 		}
-		byte arr[] = new byte[1024];
+		byte arr[] = new byte[4096];
 		String str = null;
 		Map<String, String> pac;
 		SocketUDT server = new SocketUDT(TypeUDT.STREAM);
