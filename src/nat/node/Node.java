@@ -1,5 +1,3 @@
-package data_transferor;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +22,11 @@ import com.barchart.udt.SocketUDT;
 import com.barchart.udt.TypeUDT;
 import com.barchart.udt.net.NetInputStreamUDT;
 import com.barchart.udt.net.NetOutputStreamUDT;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * 
@@ -41,7 +44,7 @@ public class Node {
 	protected Map<String, String> UName_ID;
 	protected Thread node_thread;
 
-	protected InetAddress IP_local;
+	protected String IP_local;
 	protected Map<String, String> node_IPs;
 
 	protected Queue<String> node_inserted_lm;
@@ -101,7 +104,8 @@ public class Node {
 		this.server_port = server_port;
 		data_to_send = Executors.newCachedThreadPool();
 		try {
-			IP_local = InetAddress.getLocalHost();
+			IP_local = getRealLocalIP();
+                        System.out.println(IP_local);
 		} catch (UnknownHostException e) {
 			IP_local = null;
 			e.printStackTrace();
@@ -131,7 +135,7 @@ public class Node {
 		ID = pac.get("ID");
 		pac = new ConcurrentHashMap<String, String>();
 		pac.put("UName", this.user_name);
-		pac.put("LIP", this.IP_local.getHostAddress());
+		pac.put("LIP", this.IP_local);
 		try {
 			str = Packer.pack("NodeI", "03", pac);
 		} catch (PackException e) {// just used for debug
@@ -172,6 +176,39 @@ public class Node {
 			arr[i] = ' ';
 		}
 	}
+        
+        private String getRealLocalIP() throws UnknownHostException
+        {
+            StringBuilder IFCONFIG = null;
+            if(System.getProperties().getProperty("os.name").toLowerCase().contains("win"))
+            {
+                return InetAddress.getLocalHost().getHostAddress();
+            }
+            else
+            {
+                IFCONFIG = new StringBuilder();
+                try 
+                {
+                    for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();)
+                    {
+                        NetworkInterface intf = en.nextElement();
+                        for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();)
+                        {
+                            InetAddress inetAddress = enumIpAddr.nextElement();
+                            if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress() && inetAddress.isSiteLocalAddress())
+                            {
+                                IFCONFIG.append(inetAddress.getHostAddress().toString()+"\n");
+                            }
+                        }
+                    }
+                } 
+                catch (SocketException ex) 
+                {
+                    Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }    
+            return IFCONFIG.toString();
+        }
 
 	/**
 	 * @param str
