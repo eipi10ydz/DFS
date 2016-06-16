@@ -15,10 +15,6 @@ import com.barchart.udt.SocketUDT;
 import com.barchart.udt.TypeUDT;
 
 /**
- * 
- */
-
-/**
  * @author lyx, wzy
  *
  */
@@ -54,14 +50,14 @@ class DataSender implements Callable<Boolean> {
 		byte arr[] = new byte[4096];
 		String str = null;
 		Map<String, String> pac, pac_routd01 = null;
-		Map<Integer, String> data_to_send = new ConcurrentHashMap<>(); // 切块后的数据
+		List<String> data_to_send = new ArrayList<>(); // 切块后的数据
 		List<String> packets = new ArrayList<>();
 		int cnt; // 包的总数目
 		int packet_cnt = 0;
 		String ID_p;
 		int i;
 		for (i = 0; i * block <= data.length(); i++) {
-			data_to_send.put(i,
+			data_to_send.add(i,
 					data.substring(i * block, ((i + 1) * block > data.length()) ? data.length() : (i + 1) * block));
 		}
 		cnt = i;
@@ -128,7 +124,7 @@ class DataSender implements Callable<Boolean> {
 				}
 				packets.add(str);
 			}
-			// TODO DataSender2.Send(ID_p, );
+			DataSender2.Send(ID_p, node, packets);
 		}
 		while (true) {
 			if (finished_list.contains(No1))
