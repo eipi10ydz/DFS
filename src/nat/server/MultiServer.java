@@ -1,3 +1,7 @@
+package server;
+
+
+
 import com.barchart.udt.ExceptionUDT;
 import com.barchart.udt.SocketUDT;
 import com.barchart.udt.TypeUDT;
@@ -302,6 +306,7 @@ class MultiServerImplementation implements Runnable
                 {
                     if(!next.equals(client))
                     {
+                        map_edge_delete(parseInt(client.ID), parseInt(next.ID));
                         SocketUDT sockInform = new NetSocketUDT().socketUDT();
                         try
                         {
@@ -511,7 +516,7 @@ class MultiServerImplementation implements Runnable
                 record.put(pair_from,"false");
                 int from = Integer.parseInt(info.get("ID_source"));
                 int to = Integer.parseInt(info.get("ID"));
-        map_edge_delete(from, to);//收到"LinkC false直接delete边"
+                map_edge_delete(from, to);//收到"LinkC false直接delete边"
             }//do nothing?
             client_from.isConnecting = false;
             client_to.isConnecting = false;
