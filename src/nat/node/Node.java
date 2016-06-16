@@ -47,7 +47,7 @@ public class Node {
 	protected Queue<String> node_inserted_lm;
 	protected Queue<String> node_deleted_lm;
 
-	protected Thread link_establisher_thread_m;
+	protected Thread link_connectivity_checker;
 	protected Thread link_establisher_thread_s1;
 	protected Thread link_establisher_thread_s2;
 	protected LinkEstablisher link_establisher;
@@ -150,8 +150,8 @@ public class Node {
 			UName_ID.put(pac.get(s1 + i), pac.get(s2 + i));
 			node_IPs.put(pac.get(s2 + i), pac.get(s3 + i));
 		}
-		link_establisher_thread_m = new Thread(new LinkEstablisherThreadM(this));
-		link_establisher_thread_m.start();
+		link_connectivity_checker = new Thread(new LinkConnectivityChecker(this));
+		link_connectivity_checker.start();
 		link_establisher_thread_s1 = new Thread(new LinkEstablisherThreadS1(this));
 		link_establisher_thread_s1.start();
 		link_establisher_thread_s2 = new Thread(new LinkEstablisherThreadS2(this));
