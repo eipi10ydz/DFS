@@ -2,6 +2,8 @@ package data_transferor;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -48,12 +50,13 @@ class DataSender implements Callable<Boolean> {
 	 * @see java.util.concurrent.Callable#call()
 	 */
 	@Override
-	public Boolean call() {// Ã¿µ÷Ò»´ÎÒ»¸öÏß³Ì
+	public Boolean call() {// æ¯è°ƒä¸€æ¬¡ä¸€ä¸ªçº¿ç¨‹
 		byte arr[] = new byte[4096];
 		String str = null;
-		Map<String, String> pac, pac_routd01 = null, pac_routd02 = null;
-		Map<Integer, String> data_to_send = new ConcurrentHashMap<>(); // ÇĞ¿éºóµÄÊı¾İ
-		int cnt; // °üµÄ×ÜÊıÄ¿
+		Map<String, String> pac, pac_routd01 = null;
+		Map<Integer, String> data_to_send = new ConcurrentHashMap<>(); // åˆ‡å—åçš„æ•°æ®
+		List<String> packets = new ArrayList<>();
+		int cnt; // åŒ…çš„æ€»æ•°ç›®
 		int packet_cnt = 0;
 		String ID_p;
 		int i;
@@ -92,29 +95,38 @@ class DataSender implements Callable<Boolean> {
 			e.printStackTrace();
 			return false;
 		}
-		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // Â·¾¶Êı
+		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // è·¯å¾„æ•°
 		for (i = 1; i <= rout_cnt; i++) {
-			int routi = Integer.parseInt(pac_routd01.get("Rout" + i));// °üÊı
+			int routi = Integer.parseInt(pac_routd01.get("Rout" + i));// åŒ…æ•°
 			int routi_cnt = Integer.parseInt(pac_routd01.get("Rout" + i + "Cnt"));
 			pac = new ConcurrentHashMap<>();
 			ID_p = pac_routd01.get("Rout" + i + "Hop_1");
 			pac.put("From", node.ID);
 			pac.put("To", dest);
 			pac.put("No", Integer.toString(No1));
-			pac.put("NoBeg", Integer.toString(packet_cnt)); // °üµÄÆğÊ¼±àºÅ
-			pac.put("HopCnt", pac_routd01.get("Rout" + i + "Cnt"));// Ã¿¸öÂ·¾¶µÄ½ÚµãÊı
+			pac.put("NoBeg", Integer.toString(packet_cnt)); // åŒ…çš„èµ·å§‹ç¼–å·
+			pac.put("HopCnt", pac_routd01.get("Rout" + i + "Cnt"));// æ¯ä¸ªè·¯å¾„çš„èŠ‚ç‚¹æ•°
 			pac.put("PackCnt", pac_routd01.get("Rout" + i));
 			for (int j = 1; j <= routi_cnt; j++) {
 				pac.put("Hop_" + j, pac_routd01.get("Rout" + i + "Hop_" + j));
 			}
-			// TODO pack
-			String str_send = new String();
+			try {
+				str = Packer.pack("RoutD", "02", pac);
+			} catch (PackException e1) {// just used for debug
+				e1.printStackTrace();
+			}
+			packets.add(str);
 			for (int j = 0; j != routi; j++) {
 				pac = new ConcurrentHashMap<>();
 				pac.put("No", Integer.toString(No1));
 				pac.put("content", data_to_send.get(packet_cnt));
 				packet_cnt++;
-				// TODO pack
+				try {
+					str = Packer.pack("Data", pac);
+				} catch (PackException e1) {// just used for debug
+					e1.printStackTrace();
+				}
+				packets.add(str);
 			}
 			// TODO DataSender2.Send(ID_p, );
 		}
@@ -122,6 +134,6 @@ class DataSender implements Callable<Boolean> {
 			if (finished_list.contains(No1))
 				return true;
 		}
-		//return false;
+		// return false;
 	}
 }
