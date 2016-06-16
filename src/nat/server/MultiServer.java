@@ -134,6 +134,12 @@ class MultiServerImplementation implements Runnable
                 }
             }
             break;
+            case "RoutQ": {
+                return_route(info, sock);
+            }
+            case "RoutI": {
+                map_edge_change(info, sock);
+            }
         }
     }
     
@@ -145,6 +151,7 @@ class MultiServerImplementation implements Runnable
         try 
         {
             temp_clientNum = this.clientNum++;
+            this.mapVertices++;
         }
         finally 
         {
@@ -406,7 +413,7 @@ class MultiServerImplementation implements Runnable
         sock.close();
     }
 
-        public void map_change(Map<String, String> info, SocketUDT sock) {
+    /*    public void map_change(Map<String, String> info, SocketUDT sock) {
         int ID = Integer.parseInt(info.get("ID"));
         double RTT, bandwidth, lostRate, weight;
         try {
@@ -436,9 +443,10 @@ class MultiServerImplementation implements Runnable
         } finally {
             lock.unlock();
         }
-    }
+    }*/
 
-    public void map_edge_insert(Map<String, String> info, SocketUDT sock) {
+    public void map_edge_change(Map<String, String> info, SocketUDT sock) {
+        double border = 123;//定义一个border,旧的和新的差距超过这个border,就直接新代旧，否则取平均      
         int from = Integer.parseInt(info.get("ID"));
         int to = Integer.parseInt(info.get("to"));
         double RTT, bandwidth, lostRate, weight;
@@ -448,11 +456,12 @@ class MultiServerImplementation implements Runnable
             bandwidth = Double.parseDouble(info.get("bandwidth_"));
             lostRate = Double.parseDouble(info.get("lostRate_"));
             weight = 1.0 * RTT + 0.2 * lostRate + 1.0 * bandwidth;
-            if (this.fi.weight[from][to] == INFINITY && this.fi.weight[to][from] == INFINITY) {
+            if (Math.abs(this.fi.weight[from][to] - weight) > border && Math.abs(this.fi.weight[to][from] - weight) > border) {
                 this.fi.weight[from][to] = this.fi.weight[to][from] = weight;
-            } else {
+            } //差距超过border直接取代
+            else {
                 this.fi.weight[from][to] = this.fi.weight[to][from] = (this.fi.weight[from][to] + weight) / 2;
-            }
+            }//否则取平均
 
             this.fi.res_init();
             this.fi.path_init();
@@ -463,7 +472,6 @@ class MultiServerImplementation implements Runnable
             lock.unlock();
         }
     }
-
     public void map_edge_delete(Map<String, String> info, SocketUDT sock) {
         int from = Integer.parseInt(info.get("ID_source"));
         int to = Integer.parseInt(info.get("ID"));
@@ -481,50 +489,142 @@ class MultiServerImplementation implements Runnable
         }
     }
 
-    public void return_route(Map<String, String> info, SocketUDT sock) {
-        List<Integer> best ;
-        List<List<Integer>> route_list =new ArrayList<>();
+        public void return_route(Map<String, String> info, SocketUDT sock) throws ExceptionUDT {
+        List<Integer> route;
+        List<Integer> judge;
+        List<List<Integer>> route_list = new ArrayList<>();
         int from = Integer.parseInt(info.get("ID"));
         int to = Integer.parseInt(info.get("ID_target"));
-        //未完待续
-        int [] able=new int[mapVertices];//用来存和from直连的顶点
-        int count = 0;
-        for (int i = 0; i < mapVertices; i++) {
-            if (fi.weight[from][i] > 0 || fi.weight[from][i] != INFINITY) {
-                able[count++]=i;//统计与from直接相连的node数
-            }
-        }
-        int[] a = new int[count];//用一个类似bool数组来表示是否算过，0代表算过
-
-        double min = INFINITY;
-        int temp = (int) INFINITY;//循环时每次选出的顶点编号
-        int chosen = (int) INFINITY;//循环时每次选出的顶点在able数组中的编号 
-        for (int i = 0; i < count; i++) {
-            best = new ArrayList<>();
-            for (int j = 0; j < count; j++) {
-                if (a[j] != 0) {
-                    if (fi.weight[from][able[j]] + fi.res[able[j]][to] < min) {
-                        min = fi.weight[from][able[j]] + fi.res[able[j]][to];
-                        temp = able[j];
-                        chosen = j;
-                    }
+        int cnt = Integer.parseInt(info.get("Cnt"));
+        int Rout1, Rout2, Rout3, Rout1cnt, Rout2cnt, Rout3cnt;
+        int Routcnt;
+        Map<String, String> sendBack;
+        sendBack = new HashMap<>();
+        if (this.fi.res[Integer.parseInt(info.get("ID"))][Integer.parseInt(info.get("ID_target"))] == this.INFINITY) {
+            sendBack.put("type", "ERR");
+            sendBack.put("type_d", "02");
+            sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
+            //发送错误包，无法连接
+        } //发送路径
+        else {
+            int[] able = new int[mapVertices];//用来存和from直连的顶点
+            int count = 0;
+            for (int i = 0; i < mapVertices; i++) {
+                if (fi.weight[from][i] > 0 && fi.weight[from][i] != INFINITY) {
+                    able[count++] = i;//统计与from直接相连的node数
                 }
             }
-            a[chosen] = 1;
-            best.add(from);
-            this.fi.output_toList(temp, to, best);
-            route_list.add(best);
-        }//得到排好序的route_list,最短的在最前面      
-                 
-       //this.fi.output_toList(Integer.parseInt(info.get("ID")), Integer.parseInt(info.get("ID_target")), best);
-       // Map<String, String> sendBack;
-        //sendBack = new HashMap<>();
-        if (this.fi.res[Integer.parseInt(info.get("ID"))][Integer.parseInt(info.get("ID_target"))] == this.INFINITY) {
-            //发送错误包，无法连接
-        } else {
-            //发送路径
+            int[] a = new int[count];//用一个类似bool的int数组来表示是否算过(因为bool不知道怎么初始化)，0代表算过
+            double min;
+            int temp = (int) INFINITY;//循环时每次选出的顶点编号
+            int chosen = (int) INFINITY;//循环时每次选出的顶点在able数组中的编号 
+            for (int i = 0; i < count; i++) {
+                route = new ArrayList<>();
+                judge = new ArrayList<>();
+                min = INFINITY;
+                for (int j = 0; j < count; j++) {
+                    if (a[j] == 0) {
+                        if (fi.weight[from][able[j]] + fi.res[able[j]][to] < min) {
+                            min = fi.weight[from][able[j]] + fi.res[able[j]][to];
+                            temp = able[j];
+                            chosen = j;
+                        }
+                    }
+                }
+                a[chosen] = 1;
+                route.add(from);
+                this.fi.output_toList(temp, to, route);
+                this.fi.output_toList(temp, to, judge);
+                if (!judge.contains(from)) {
+                    route_list.add(route);
+                }//如果中间又经过了from中转则不要
+            }//得到排好序的route_list,最短的在最前面,以此类推
+            //Random ran = new Random();
+            //int r = ran.nextInt(100);
+            if (route_list.size() >= 3) {
+                Routcnt = 3;
+            } else if (route_list.size() == 2) {
+                Routcnt = 2;
+            } else if (route_list.size() == 1) {
+                Routcnt = 1;
+            } else {
+                Routcnt = 0;
+            }
+            Rout1cnt = route_list.get(0).size() - 1;
+            Rout2cnt = route_list.get(1).size() - 1;
+            Rout3cnt = route_list.get(2).size() - 1;
+            sendBack.put("type", "RoutD");
+            sendBack.put("type_d", "01");
+            sendBack.put("From", from + "");
+            sendBack.put("To", to + "");
+            sendBack.put("RoutCnt", Routcnt + "");
+            switch (Routcnt) {
+                case 3:
+                    Rout1 = (int) (cnt * 0.5);
+                    Rout2 = (int) (cnt * 0.3);
+                    Rout3 = (int) (cnt * 0.2);
+                    if ((Rout1 + Rout2 + Rout3) < cnt) {
+                        if ((cnt * 0.5) - (double) (Rout1) >= 0.5) {
+                            Rout1++;
+                        } else if ((cnt * 0.5) - (double) (Rout2) >= 0.5) {
+                            Rout2++;
+                        } else {
+                            Rout3++;
+                        }
+                    }
+                    sendBack.put("Rout1Cnt", Rout1cnt + "");
+                    sendBack.put("Rout1", Rout1 + "");
+                    for (int i = 1; i <= Rout1cnt; i++) {
+                        sendBack.put("Rout1Hop_" + i, route_list.get(0).get(i) + "");
+                    }
+                    sendBack.put("Rout2Cnt", Rout2cnt + "");
+                    sendBack.put("Rout2", Rout2 + "");
+                    for (int i = 1; i <= Rout2cnt; i++) {
+                        sendBack.put("Rout2Hop_" + i, route_list.get(1).get(i) + "");
+                    }
+                    sendBack.put("Rout3Cnt", Rout3cnt + "");
+                    sendBack.put("Rout3", Rout3 + "");
+                    for (int i = 1; i <= Rout3cnt; i++) {
+                        sendBack.put("Rout3Hop_" + i, route_list.get(2).get(i) + "");
+                    }
+                case 2:
+                    Rout1 = (int) (cnt * 0.7);
+                    Rout2 = (int) (cnt * 0.3);
+                    Rout3 = 0;
+                    if (Rout1 + Rout2 < cnt) {
+                        if ((cnt * 0.5) - (double) (Rout1) >= 0.5) {
+                            Rout1++;
+                        } else {
+                            Rout2++;
+                        }
+                    }
+                    sendBack.put("Rout1Cnt", Rout1cnt + "");
+                    sendBack.put("Rout1", Rout1 + "");
+                    for (int i = 1; i <= Rout1cnt; i++) {
+                        sendBack.put("Rout1Hop_" + i, route_list.get(0).get(i) + "");
+                    }
+                    sendBack.put("Rout2Cnt", Rout2cnt + "");
+                    sendBack.put("Rout2", Rout2 + "");
+                    for (int i = 1; i <= Rout2cnt; i++) {
+                        sendBack.put("Rout2Hop_" + i, route_list.get(1).get(i) + "");
+                    }
+
+                case 1:
+                    Rout1 = cnt;
+                    Rout2 = Rout3 = 0;
+                    sendBack.put("Rout1Cnt", Rout1cnt + "");
+                    sendBack.put("Rout1", Rout1 + "");
+                    for (int i = 1; i <= Rout1cnt; i++) {
+                        sendBack.put("Rout1Hop_" + i, route_list.get(0).get(i) + "");
+                    }
+                default:
+                    sendBack.put("type", "ERR");
+                    sendBack.put("type_d", "02");
+            }
+            sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
         }
     }
+
     
     public void record_info(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
@@ -583,6 +683,7 @@ class MultiServerImplementation implements Runnable
             else
             {
                 record.put(pair_from,"false");
+                map_edge_delete(info, sock);//收到"LinkC false直接delete边"
             }//do nothing?
             client_from.isConnecting = false;
             client_to.isConnecting = false;
