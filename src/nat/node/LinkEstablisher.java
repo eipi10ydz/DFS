@@ -114,6 +114,7 @@ class LinkEstablisher {
 																			// packet
 																			// LinkE06
 				Timer timer = new Timer(5000);// 5s - may be too short?
+				timer.start();
 				while (!node.link_establish_socks.containsKey(ID_p)) {
 					if (timer.isExpired())// timeout
 					{
