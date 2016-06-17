@@ -88,6 +88,12 @@ class LinkEstablisher {
 																		// packet
 																		// LinkE04
 				tell_server(ID_p, true);
+				try {
+					Thread.sleep(1000);//tricky
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					Thread.currentThread().interrupt();
+				}
 				return sock;
 			} catch (ExceptionUDT | PackException | NodeException e) {
 				try {
@@ -113,7 +119,7 @@ class LinkEstablisher {
 				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																			// packet
 																			// LinkE06
-				Timer timer = new Timer(5000);// 5s - may be too short?
+				Timer timer = new Timer(5000);// TODO 5s - may be too short?
 				timer.start();
 				while (!node.link_establish_socks.containsKey(ID_p)) {
 					if (timer.isExpired())// timeout
@@ -155,6 +161,12 @@ class LinkEstablisher {
 					throw new NodeException("Unexpected packet from the peer node.");
 				}
 				tell_server(ID_p, true);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					Thread.currentThread().interrupt();
+				}
 				return sock;
 			} catch (ExceptionUDT | NodeException | PackException e) {
 				try {
@@ -245,6 +257,12 @@ class LinkEstablisher {
 				} catch (ExceptionUDT e) {
 					e.printStackTrace();
 				}
+			}
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				Thread.currentThread().interrupt();
 			}
 			return sock;
 		} finally {
