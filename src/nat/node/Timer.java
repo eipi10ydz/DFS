@@ -110,7 +110,7 @@ class Timer {
 	 * @return if the timer has expired
 	 */
 	public boolean isExpired() {
-		return (this.start_time + this.period) >= System.currentTimeMillis();
+		return (this.start_time + this.period) <= System.currentTimeMillis();
 	}
 
 }
