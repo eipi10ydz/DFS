@@ -243,7 +243,7 @@ public class Node {
 						InetAddress inetAddress = enumIpAddr.nextElement();
 						if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()
 								&& inetAddress.isSiteLocalAddress()) {
-							IFCONFIG.append(inetAddress.getHostAddress().toString() + "\n");
+							IFCONFIG.append(inetAddress.getHostAddress().toString());
 						}
 					}
 				}
