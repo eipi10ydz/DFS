@@ -47,11 +47,19 @@ class LinkEstablisherThreadS1 implements Runnable {
 					sock.receive(arr);// receive packet LinkE04
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 					pac = Packer.unpack(str);
-					if (pac.containsKey("type") && pac.containsKey("type_d") && pac.get("type").equals("LinkE")
-							&& pac.get("type_d").equals("04") && node.nodeIDs.contains(pac.get("ID"))) {
-						if (node.link_establisher.establish_link_s1(pac.get("ID"), sock)) {
-							node.link_timers.remove(pac.get("ID"));
+					if (pac.containsKey("type") && pac.get("type").equals("LinkE") && pac.containsKey("type_d")) {
+						if (pac.get("type_d").equals("04") && node.nodeIDs.contains(pac.get("ID"))) {
+							if (node.link_establisher.establish_link_s1(pac.get("ID"), sock)) {
+								node.link_timers.remove(pac.get("ID"));
+							}
+						} else if (pac.get("type_d").equals("08") && node.nodeIDs.contains(pac.get("ID"))) {
+							node.link_establish_socks.put(pac.get("ID"), sock);
+						} else {
+							// TODO Something wrong
 						}
+
+					} else {
+						// TODO Something wrong
 					}
 				} catch (ExceptionUDT e) {
 					e.printStackTrace();
@@ -64,7 +72,7 @@ class LinkEstablisherThreadS1 implements Runnable {
 		} catch (ExceptionUDT e) {
 			e.printStackTrace();
 		}
-		return ;
+		return;
 	}
 
 }
