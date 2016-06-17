@@ -46,13 +46,13 @@ class DataSender implements Callable<Boolean> {
 	 * @see java.util.concurrent.Callable#call()
 	 */
 	@Override
-	public Boolean call() {// æ¯è°ƒä¸€æ¬¡ä¸€ä¸ªçº¿ç¨‹
+	public Boolean call() {// Ã¿µ÷Ò»´ÎÒ»¸öÏß³Ì
 		byte arr[] = new byte[4096];
 		String str = null;
 		Map<String, String> pac, pac_routd01 = null;
-		List<String> data_to_send = new ArrayList<>(); // åˆ‡å—åçš„æ•°æ®
+		List<String> data_to_send = new ArrayList<>(); // ÇĞ¿éºóµÄÊı¾İ
 		List<String> packets = new ArrayList<>();
-		int cnt; // åŒ…çš„æ€»æ•°ç›®
+		int cnt; // °üµÄ×ÜÊıÄ¿
 		int packet_cnt = 0;
 		String ID_p;
 		int i;
@@ -91,20 +91,23 @@ class DataSender implements Callable<Boolean> {
 			e.printStackTrace();
 			return false;
 		}
-		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // è·¯å¾„æ•°
+		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // Â·¾¶Êı
+		StringBuilder srout = new StringBuilder("Rout");
+		StringBuilder scnt = new StringBuilder("Cnt");
+		StringBuilder shop = new StringBuilder("Hop_");
 		for (i = 1; i <= rout_cnt; i++) {
-			int routi = Integer.parseInt(pac_routd01.get("Rout" + i));// åŒ…æ•°
-			int routi_cnt = Integer.parseInt(pac_routd01.get("Rout" + i + "Cnt"));
+			int routi = Integer.parseInt(pac_routd01.get(srout.append(i).toString()));// °üÊı
+			int routi_cnt = Integer.parseInt(pac_routd01.get(srout.append(i).append(scnt).toString()));
 			pac = new ConcurrentHashMap<>();
-			ID_p = pac_routd01.get("Rout" + i + "Hop_1");
+			ID_p = pac_routd01.get(srout.append(i).append(shop).toString());
 			pac.put("From", node.ID);
 			pac.put("To", dest);
 			pac.put("No", Integer.toString(No1));
-			pac.put("NoBeg", Integer.toString(packet_cnt)); // åŒ…çš„èµ·å§‹ç¼–å·
-			pac.put("HopCnt", pac_routd01.get("Rout" + i + "Cnt"));// æ¯ä¸ªè·¯å¾„çš„èŠ‚ç‚¹æ•°
-			pac.put("PackCnt", pac_routd01.get("Rout" + i));
+			pac.put("NoBeg", Integer.toString(packet_cnt)); // °üµÄÆğÊ¼±àºÅ
+			pac.put("HopCnt", pac_routd01.get(srout.append(i).append(scnt).toString()));// Ã¿¸öÂ·¾¶µÄ½ÚµãÊı
+			pac.put("PackCnt", pac_routd01.get(srout.append(i).toString()));
 			for (int j = 1; j <= routi_cnt; j++) {
-				pac.put("Hop_" + j, pac_routd01.get("Rout" + i + "Hop_" + j));
+				pac.put(shop.append(j).toString(), pac_routd01.get(srout.append(i).append(shop).append(j).toString()));
 			}
 			try {
 				str = Packer.pack("RoutD", "02", pac);
