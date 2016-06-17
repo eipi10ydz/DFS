@@ -1,6 +1,7 @@
 package data_transferor;
 
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 
@@ -58,6 +59,7 @@ class NodeThread implements Runnable {
 		node.nodeIDs.add(nodeID);
 		node.UName_ID.put(UName, nodeID);
 		node.node_IPs.put(nodeID, LIP);
+		node.link_establish_locks.put(nodeID, new ReentrantLock());
 		node.node_inserted_lm.add(nodeID);
 		node.node_inserted_rout.add(nodeID);
 		return;
