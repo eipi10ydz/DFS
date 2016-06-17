@@ -95,6 +95,7 @@ public class Node {
 		node_deleted_lm = new ConcurrentLinkedQueue<>();
 		link_establisher = new LinkEstablisher(this);
 		link_establish_locks = new ConcurrentHashMap<>();
+		link_establish_socks = new ConcurrentHashMap<>();
 		link_locks = new ConcurrentHashMap<>();
 		link_timers = new ConcurrentHashMap<>();
 		router = new NodeRouter(this);
