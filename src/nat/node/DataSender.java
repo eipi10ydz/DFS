@@ -92,22 +92,22 @@ class DataSender implements Callable<Boolean> {
 			return false;
 		}
 		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // 路径数
-		StringBuilder srout = new StringBuilder("Rout");
-		StringBuilder scnt = new StringBuilder("Cnt");
-		StringBuilder shop = new StringBuilder("Hop_");
+		String srout = new String("Rout");
+		String scnt = new String("Cnt");
+		String shop = new String("Hop_");
 		for (i = 1; i <= rout_cnt; i++) {
-			int routi = Integer.parseInt(pac_routd01.get(srout.append(i).toString()));// 包数
-			int routi_cnt = Integer.parseInt(pac_routd01.get(srout.append(i).append(scnt).toString()));
+			int routi = Integer.parseInt(pac_routd01.get(srout+i));// 包数
+			int routi_cnt = Integer.parseInt(pac_routd01.get(srout+i+scnt));
 			pac = new ConcurrentHashMap<>();
-			ID_p = pac_routd01.get(srout.append(i).append(shop).toString());
+			ID_p = pac_routd01.get(srout+i+shop);
 			pac.put("From", node.ID);
 			pac.put("To", dest);
 			pac.put("No", Integer.toString(No1));
 			pac.put("NoBeg", Integer.toString(packet_cnt)); // 包的起始编号
-			pac.put("HopCnt", pac_routd01.get(srout.append(i).append(scnt).toString()));// 每个路径的节点数
-			pac.put("PackCnt", pac_routd01.get(srout.append(i).toString()));
+			pac.put("HopCnt", pac_routd01.get(srout+i+scnt));// 每个路径的节点数
+			pac.put("PackCnt", pac_routd01.get(srout+i));
 			for (int j = 1; j <= routi_cnt; j++) {
-				pac.put(shop.append(j).toString(), pac_routd01.get(srout.append(i).append(shop).append(j).toString()));
+				pac.put(shop+j, pac_routd01.get(srout+i+shop+j));
 			}
 			try {
 				str = Packer.pack("RoutD", "02", pac);
