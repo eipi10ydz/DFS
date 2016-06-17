@@ -152,14 +152,14 @@ public class Node {
 		str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 		pac = Packer.Check_table(str);
 		int cnt = Integer.parseInt(pac.get("cnt"));
-		String s1 = new String("UName_");
-		String s3 = new String("LIP_");
-		String s2 = new String("ID_");
+		StringBuilder s1 = new StringBuilder("UName_");
+		StringBuilder s3 = new StringBuilder("LIP_");
+		StringBuilder s2 = new StringBuilder("ID_");
 		for (int i = 1; i <= cnt; i++) {
-			nodeIDs.add(pac.get(s2 + i));
-			UName_ID.put(pac.get(s1 + i), pac.get(s2 + i));
-			node_IPs.put(pac.get(s2 + i), pac.get(s3 + i));
-			link_establish_locks.put(pac.get(s2 + i), new ReentrantLock());
+			nodeIDs.add(pac.get(s2.append(i).toString()));
+			UName_ID.put(pac.get(s1.append(i).toString()), pac.get(s2.append(i).toString()));
+			node_IPs.put(pac.get(s2.append(i).toString()), pac.get(s3.append(i).toString()));
+			link_establish_locks.put(pac.get(s2.append(i).toString()), new ReentrantLock());
 		}
 		link_connectivity_checker = new Thread(new LinkConnectivityChecker(this));
 		link_connectivity_checker.start();
