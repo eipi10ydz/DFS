@@ -1,3 +1,5 @@
+package data_transferor;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -5,8 +7,11 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -16,17 +21,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.barchart.udt.ExceptionUDT;
 import com.barchart.udt.SocketUDT;
 import com.barchart.udt.TypeUDT;
 import com.barchart.udt.net.NetInputStreamUDT;
 import com.barchart.udt.net.NetOutputStreamUDT;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.Enumeration;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * 
@@ -105,7 +107,7 @@ public class Node {
 		data_to_send = Executors.newCachedThreadPool();
 		try {
 			IP_local = getRealLocalIP();
-                        System.out.println(IP_local);
+			System.out.println(IP_local);
 		} catch (UnknownHostException e) {
 			IP_local = null;
 			e.printStackTrace();
@@ -176,39 +178,6 @@ public class Node {
 			arr[i] = ' ';
 		}
 	}
-        
-        private String getRealLocalIP() throws UnknownHostException
-        {
-            StringBuilder IFCONFIG = null;
-            if(System.getProperties().getProperty("os.name").toLowerCase().contains("win"))
-            {
-                return InetAddress.getLocalHost().getHostAddress();
-            }
-            else
-            {
-                IFCONFIG = new StringBuilder();
-                try 
-                {
-                    for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();)
-                    {
-                        NetworkInterface intf = en.nextElement();
-                        for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();)
-                        {
-                            InetAddress inetAddress = enumIpAddr.nextElement();
-                            if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress() && inetAddress.isSiteLocalAddress())
-                            {
-                                IFCONFIG.append(inetAddress.getHostAddress().toString()+"\n");
-                            }
-                        }
-                    }
-                } 
-                catch (SocketException ex) 
-                {
-                    Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }    
-            return IFCONFIG.toString();
-        }
 
 	/**
 	 * @param str
@@ -250,5 +219,34 @@ public class Node {
 		} else {
 			throw new IllegalArgumentException("The destination dose not exist.");
 		}
+	}
+
+	/**
+	 * @return LocalIP
+	 * @throws UnknownHostException
+	 */
+	private String getRealLocalIP() throws UnknownHostException {
+		StringBuilder IFCONFIG = null;
+		if (System.getProperties().getProperty("os.name").toLowerCase().contains("win")) {
+			return InetAddress.getLocalHost().getHostAddress();
+		} else {
+			IFCONFIG = new StringBuilder();
+			try {
+				for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
+						.hasMoreElements();) {
+					NetworkInterface intf = en.nextElement();
+					for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+						InetAddress inetAddress = enumIpAddr.nextElement();
+						if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()
+								&& inetAddress.isSiteLocalAddress()) {
+							IFCONFIG.append(inetAddress.getHostAddress().toString() + "\n");
+						}
+					}
+				}
+			} catch (SocketException ex) {
+				Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		}
+		return IFCONFIG.toString();
 	}
 }
