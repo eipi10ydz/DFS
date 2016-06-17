@@ -217,7 +217,7 @@ public class Node {
 		String str = new String(bo.toByteArray(), Charset.forName("ISO-8859-1"));
 		so.close();
 		bo.close();
-		String ID_p = UName_ID.get("peer");
+		String ID_p = UName_ID.get(peer);
 		if (ID_p != null && nodeIDs.contains(ID_p)) {// Launch a new task and
 														// hold its result
 			Future<Boolean> result;

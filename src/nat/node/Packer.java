@@ -68,7 +68,7 @@ public class Packer {
 		 		if(!pac.containsKey("ID")||!pac.containsKey("ID_target")||!pac.containsKey("Cnt")){
 		 			throw new PackException("包的结构不对");
 		 		}
-		 		else if(pac.size() != 3){
+		 		else if(pac.size() != 4){
 		 			throw new PackException("包的结构不对");
 		 		}
 		 		else{
