@@ -119,7 +119,7 @@ class LinkEstablisher {
 				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																			// packet
 																			// LinkE06
-				Timer timer = new Timer(10000);// TODO 10s - may be too short?
+				Timer timer = new Timer(5000);// TODO 5s - may be too short?
 				timer.start();
 				while (!node.link_establish_socks.containsKey(ID_p)) {
 					if (timer.isExpired())// timeout
