@@ -56,6 +56,8 @@ public class Node {
 	protected Thread link_establisher_thread_s1;
 	protected Thread link_establisher_thread_s2;
 	protected LinkEstablisher link_establisher;
+	protected Map<String, ReentrantLock> link_establish_locks;
+	protected Map<String, SocketUDT> link_establish_socks;
 	protected Map<String, ReentrantLock> link_locks;
 	protected Map<String, Timer> link_timers;
 
@@ -92,6 +94,7 @@ public class Node {
 		node_inserted_lm = new ConcurrentLinkedQueue<>();
 		node_deleted_lm = new ConcurrentLinkedQueue<>();
 		link_establisher = new LinkEstablisher(this);
+		link_establish_locks= new ConcurrentHashMap<>();
 		link_locks = new ConcurrentHashMap<>();
 		link_timers = new ConcurrentHashMap<>();
 		router = new NodeRouter(this);
@@ -156,6 +159,7 @@ public class Node {
 			nodeIDs.add(pac.get(s2 + i));
 			UName_ID.put(pac.get(s1 + i), pac.get(s2 + i));
 			node_IPs.put(pac.get(s2 + i), pac.get(s3 + i));
+			link_establish_locks.put(pac.get(s2 + i), new ReentrantLock());
 		}
 		link_connectivity_checker = new Thread(new LinkConnectivityChecker(this));
 		link_connectivity_checker.start();
@@ -239,7 +243,7 @@ public class Node {
 						InetAddress inetAddress = enumIpAddr.nextElement();
 						if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()
 								&& inetAddress.isSiteLocalAddress()) {
-							IFCONFIG.append(inetAddress.getHostAddress().toString());
+							IFCONFIG.append(inetAddress.getHostAddress().toString() + "\n");
 						}
 					}
 				}
