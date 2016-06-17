@@ -63,7 +63,7 @@ class LinkEstablisher {
 			pac = Packer.unpack(str);
 			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
 					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-					&& pac.get("type_d").equals(ID_p))) {
+					&& pac.get("ID").equals(ID_p))) {
 				throw new NodeException("Error on the peer side.");
 			}
 			InetSocketAddress local_address = sock.getLocalSocketAddress();
@@ -79,7 +79,7 @@ class LinkEstablisher {
 			pac = Packer.unpack(str);
 			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
 					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-					&& pac.get("type_d").equals(ID_p))) {
+					&& pac.get("ID").equals(ID_p))) {
 				try {
 					sock.close();
 				} catch (ExceptionUDT e1) {
@@ -152,7 +152,7 @@ class LinkEstablisher {
 				pac = Packer.unpack(str);
 				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
 						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-						&& pac.get("type_d").equals(ID_p))) {
+						&& pac.get("ID").equals(ID_p))) {
 					try {
 						sock.close();
 					} catch (ExceptionUDT e1) {
@@ -232,7 +232,7 @@ class LinkEstablisher {
 			pac = Packer.unpack(str);
 			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
 					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-					&& pac.get("type_d").equals(ID_p))) {
+					&& pac.get("ID").equals(ID_p))) {
 				try {
 					sock.close();
 				} catch (ExceptionUDT e1) {
@@ -308,9 +308,6 @@ class LinkEstablisher {
 			pac = Packer.unpack(str);
 			InetSocketAddress local_address = server.getLocalSocketAddress();
 			server.close();
-			if (!pac.get("ID").equals(ID_p)) {// Error on the server side.
-				throw new NodeException("Error on the server side.");
-			}
 			sock.bind(local_address);
 			sock.setRendezvous(true);
 			try {
@@ -331,7 +328,7 @@ class LinkEstablisher {
 				pac = Packer.unpack(str);
 				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
 						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-						&& pac.get("type_d").equals(ID_p))) {
+						&& pac.get("ID").equals(ID_p))) {
 					try {
 						sock.close();
 					} catch (ExceptionUDT e1) {
