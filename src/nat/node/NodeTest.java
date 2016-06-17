@@ -24,16 +24,31 @@ public class NodeTest {
         String server_host = "119.29.61.231";
 //        String server_host = "127.0.0.1";
         int server_port = 23333;
+        Node client = null;
         try {
             try {
-                Node client = new Node("test", server_host, server_port);
+                client = new Node("test", server_host, server_port);
             } catch (ExceptionUDT | PackException ex) {
                 Logger.getLogger(NodeTest.class.getName()).log(Level.SEVERE, null, ex);
             }
         } catch (NodeException ex) {
             Logger.getLogger(NodeTest.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(NodeTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        while(true)
+        {
+            try 
+            {
+                client.transfer_message("我就测试一下...", "00000");
+            } catch (Exception e) 
+            {
+            
+            }
+        }
     }
     
 }

@@ -105,7 +105,7 @@ public class NodeLink implements Runnable
                         String [] pack = new String[pack_cnt];
                         if((!node.dataReceiver.containsKey(Integer.parseInt(No))) || node.dataReceiver.get(Integer.parseInt(No)) == null)
                         {
-                            node.dataReceiver.put(Integer.parseInt(No), new DataReceiver(From, packCntOriginal, Integer.parseInt(No)));
+                            node.dataReceiver.put(Integer.parseInt(No), new DataReceiver(From, packCntOriginal, Integer.parseInt(No), this.node));
                         }    
                         for(int i = 0; i < pack_cnt; ++i)
                         {

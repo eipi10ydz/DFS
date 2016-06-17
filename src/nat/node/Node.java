@@ -214,7 +214,7 @@ public class Node {
 		ObjectOutputStream so = new ObjectOutputStream(bo);
 		so.writeObject(obj);
 		so.flush();
-		String str = bo.toString();
+		String str = new String(bo.toByteArray(), Charset.forName("ISO-8859-1"));
 		so.close();
 		bo.close();
 		String ID_p = UName_ID.get("peer");
