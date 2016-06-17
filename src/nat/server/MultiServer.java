@@ -115,30 +115,30 @@ class MultiServerImplementation implements Runnable
         log((new String(arrRecv)).trim());
         switch(info.get("type").trim())
         {
-            case "LinkE":
+            case "LinkE" :
             {
                 switch(info.get("type_d").trim())
                 {
-                    case "01":
+                    case "01" :
                     //    key_send(info, sock);
                         pre_nat_request(info, sock);
                         break;
-                    case "02":
+                    case "02" :
                         nat_request(info, sock);
                         break;
                 }
             }
             break;
-            case "LinkC":
+            case "LinkC" :
             {
                 record_info(info, sock);
             }
             break;
-            case "NodeI":
+            case "NodeI" :
             {
                 switch(info.get("type_d").trim())
                 {
-                    case "00":
+                    case "00" :
                         register(info, sock);
                 }
             }
@@ -342,7 +342,7 @@ class MultiServerImplementation implements Runnable
     {
         String destination = info.get("ID_target");
         String ID_from = info.get("ID");
-        String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
+        String IP_from = sock.getRemoteInetAddress().getHostAddress();
         String port_from = sock.getRemoteInetPort() + "";
         Client client_from = find_client(ID_from);
         Client client_to = find_client(destination);
@@ -351,7 +351,7 @@ class MultiServerImplementation implements Runnable
         {
             log("client not in routetable");
         }
-//        lock.lock();
+        lock.lock();
         if(client_from.isConnecting || client_to.isConnecting)
         {
             log("is connecting...cannot connect to another...");
@@ -368,9 +368,9 @@ class MultiServerImplementation implements Runnable
         }
         else
         {
-//            client_from.isConnecting = true;
-//            client_to.isConnecting = true;
-//            lock.unlock();
+            client_from.isConnecting = true;
+            client_to.isConnecting = true;
+            lock.unlock();
         }      
         infoSend.put("type", "LinkE");
         infoSend.put("type_d", "03");
@@ -438,6 +438,27 @@ class MultiServerImplementation implements Runnable
             sock.send(this.gson_toJson.toJson(send_info).getBytes(Charset.forName("ISO-8859-1")));
         }
         sock.close();
+    }
+    
+    private void informDirectConnect(Map<String, String> info, SocketUDT sock)
+    {
+        String destination = info.get("ID_target");
+        Client client_to = find_client(destination);
+        SocketUDT sockInform = null;
+        info.remove("ID_target");
+        info.replace("type_d", "07");
+        try 
+        {
+            sockInform = new SocketUDT(TypeUDT.STREAM);
+            sockInform.bind(new InetSocketAddress(host, port));
+            sockInform.connect(new InetSocketAddress(client_to.IP_maintain, parseInt(client_to.port_maintain)));
+            sockInform.send(this.gson_toJson.toJson(info).getBytes(Charset.forName("ISO-8859-1")));
+        } 
+        catch (ExceptionUDT e) 
+        {
+            //向申请方发错误包么
+            log("cannot connect destination " + destination + "...direct connect application failed...");
+        }
     }
     
     private void informSendSuccess(Map<String, String> info, SocketUDT sock)
@@ -514,9 +535,9 @@ class MultiServerImplementation implements Runnable
             else
             {
                 record.put(pair_from,"false");
-                int from = Integer.parseInt(info.get("ID_source"));
-                int to = Integer.parseInt(info.get("ID"));
-                map_edge_delete(from, to);//收到"LinkC false直接delete边"
+                int from = Integer.parseInt(info.get("ID"));
+                int to = Integer.parseInt(info.get("ID_target"));
+		map_edge_delete(from, to);//收到"LinkC false直接delete边"
             }//do nothing?
             client_from.isConnecting = false;
             client_to.isConnecting = false;
