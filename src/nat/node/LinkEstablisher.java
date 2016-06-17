@@ -34,108 +34,21 @@ class LinkEstablisher {
 	 * @throws PackException
 	 * @throws ExceptionUDT
 	 */
-	protected SocketUDT establish_link_m(String ID_p) throws NodeException, ExceptionUDT, PackException {
+	protected SocketUDT establish_link_m(String ID_p) throws PackException, ExceptionUDT, NodeException {
 		if (node.ID.equals(ID_p) || !node.nodeIDs.contains(ID_p))
 			throw new IllegalArgumentException("the ID of peer node is not in the node list.");
-		byte arr[] = new byte[1024];
-		String str = new String();
-		Map<String, String> pac;
-		String IP_p = new String();
-		int Port_p = 0;
-		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
-		sock.setBlocking(true);
+		node.link_establish_locks.get(ID_p).lock();
 		try {
+			byte arr[] = new byte[1024];
+			String str = new String();
+			Map<String, String> pac;
+			String IP_p = new String();
+			int Port_p = 0;
 			// direct connect
-			sock.connect(new InetSocketAddress(node.node_IPs.get(ID_p), 2333));
-			pac = new ConcurrentHashMap<String, String>();
-			pac.put("ID", node.ID);
+			SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
+			sock.setBlocking(true);
 			try {
-				str = Packer.pack("LinkE", "04", pac);
-			} catch (PackException e) {// just used for debug
-				e.printStackTrace();
-			}
-			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
-																	// packet
-																	// LinkE04
-			sock.receive(arr);// receive packet LinkE04
-			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-			node.empty_arr(str.length(), arr);
-			pac = Packer.unpack(str);
-			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-					&& pac.get("ID").equals(ID_p))) {
-				throw new NodeException("Error on the peer side.");
-			}
-			InetSocketAddress local_address = sock.getLocalSocketAddress();
-			sock.close();
-			SocketUDT socket = new SocketUDT(TypeUDT.STREAM);
-			socket.setBlocking(true);
-			socket.bind(local_address);
-			socket.setSoTimeout(1000);
-			sock = socket.accept();
-			sock.receive(arr);// receive packet LinkE04
-			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-			node.empty_arr(str.length(), arr);
-			pac = Packer.unpack(str);
-			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-					&& pac.get("ID").equals(ID_p))) {
-				try {
-					sock.close();
-				} catch (ExceptionUDT e1) {
-					e1.printStackTrace();
-				}
-				throw new NodeException("Unexpected packet from the peer node.");
-			}
-			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
-																	// packet
-																	// LinkE04
-			tell_server(ID_p, true);
-			return sock;
-		} catch (ExceptionUDT e) {
-			try {
-				sock.close();
-			} catch (ExceptionUDT e1) {
-			}
-			e.printStackTrace();
-		}
-		// traverse
-		SocketUDT server = new SocketUDT(TypeUDT.STREAM);
-		server.setBlocking(true);
-		sock = new SocketUDT(TypeUDT.STREAM);
-		sock.setBlocking(true);
-		try {
-			server.connect(new InetSocketAddress(node.server_host, node.server_port));
-			pac = new ConcurrentHashMap<String, String>();
-			pac.put("ID", node.ID);
-			pac.put("ID_target", ID_p);
-			try {
-				str = Packer.pack("LinkE", "01", pac);
-			} catch (PackException e1) {// just used for debug
-				e1.printStackTrace();
-			}
-			server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
-																		// packet
-																		// LinkE01
-			server.receive(arr);// receive packet LinkE03
-			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-			node.empty_arr(str.length(), arr);
-			pac = Packer.unpack(str);
-			InetSocketAddress local_address = server.getLocalSocketAddress();
-			server.close();
-			if (pac.get("type").equals("ERR")) {// another Node is trying to
-												// connect with it.
-				throw new NodeException("Application denied by server.");
-			} else if (!pac.get("ID").equals(ID_p)) {// Error on the server
-														// side.
-				throw new NodeException("Error on the server side.");
-			}
-			IP_p = pac.get("IP");
-			Port_p = Integer.parseInt(pac.get("Port"));
-			sock.bind(local_address);
-			sock.setRendezvous(true);
-			try {
-				sock.connect(new InetSocketAddress(IP_p, Port_p));
+				sock.connect(new InetSocketAddress(node.node_IPs.get(ID_p), 2333));
 				pac = new ConcurrentHashMap<String, String>();
 				pac.put("ID", node.ID);
 				try {
@@ -153,36 +66,189 @@ class LinkEstablisher {
 				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
 						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
-					try {
-						sock.close();
-					} catch (ExceptionUDT e1) {
-						e1.printStackTrace();
-					}
 					throw new NodeException("Unexpected packet from the peer node.");
 				}
-			} catch (ExceptionUDT e) {
-				e.printStackTrace();
-				tell_server(ID_p, false);
-				return null;
-			}
-			tell_server(ID_p, true);
-		} catch (ExceptionUDT e) {
-			try {
+				InetSocketAddress local_address = sock.getLocalSocketAddress();
 				sock.close();
-			} catch (ExceptionUDT e1) {
-				e1.printStackTrace();
-			}
-			throw e;
-		} catch (PackException e) {
-			throw e;
-		} finally {
-			try {
-				server.close();
-			} catch (ExceptionUDT e) {
+				SocketUDT socket = new SocketUDT(TypeUDT.STREAM);
+				socket.setBlocking(true);
+				socket.bind(local_address);
+				socket.setSoTimeout(1000);
+				sock = socket.accept();
+				sock.receive(arr);// receive packet LinkE04
+				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+				node.empty_arr(str.length(), arr);
+				pac = Packer.unpack(str);
+				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
+						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+						&& pac.get("ID").equals(ID_p))) {
+					throw new NodeException("Unexpected packet from the peer node.");
+				}
+				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																		// packet
+																		// LinkE04
+				tell_server(ID_p, true);
+				return sock;
+			} catch (ExceptionUDT | PackException | NodeException e) {
+				try {
+					sock.close();
+				} catch (ExceptionUDT e1) {
+				}
 				e.printStackTrace();
 			}
+			// direct connect from the peer
+			SocketUDT server = null;
+			try {
+				server = new SocketUDT(TypeUDT.STREAM);
+				server.setBlocking(true);
+				server.connect(new InetSocketAddress(node.server_host, node.server_port));
+				pac = new ConcurrentHashMap<String, String>();
+				pac.put("ID", node.ID);
+				pac.put("ID_target", ID_p);
+				try {
+					str = Packer.pack("LinkE", "06", pac);
+				} catch (PackException e1) {// just used for debug
+					e1.printStackTrace();
+				}
+				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																			// packet
+																			// LinkE06
+				Timer timer = new Timer(5000);// 5s - may be too short?
+				while (!node.link_establish_socks.containsKey(ID_p)) {
+					if (timer.isExpired())// timeout
+					{
+						throw new NodeException("No response from the peer node.");
+					}
+				}
+				sock = node.link_establish_socks.get(ID_p);
+				node.link_establish_socks.remove(ID_p);
+				// similar with establish_link_s1
+				InetSocketAddress remote_address = sock.getRemoteSocketAddress();
+				if (!node.node_IPs.get(ID_p).equals(remote_address.getAddress().getHostAddress())) {
+					throw new NodeException("Unexpected packet from the peer node.");
+				}
+				pac = new ConcurrentHashMap<String, String>();
+				pac.put("ID", node.ID);
+				try {
+					str = Packer.pack("LinkE", "08", pac);
+				} catch (PackException e) {// just used for debug
+					e.printStackTrace();
+				}
+				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																		// packet
+																		// LinkE08
+				sock.close();
+				sock = new SocketUDT(TypeUDT.STREAM);
+				sock.setBlocking(true);
+				sock.connect(remote_address);
+				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																		// packet
+																		// LinkE04
+				sock.receive(arr);// receive packet LinkE04
+				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+				node.empty_arr(str.length(), arr);
+				pac = Packer.unpack(str);
+				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
+						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+						&& pac.get("ID").equals(ID_p))) {
+					throw new NodeException("Unexpected packet from the peer node.");
+				}
+				tell_server(ID_p, true);
+				return sock;
+			} catch (ExceptionUDT | NodeException | PackException e) {
+				try {
+					sock.close();
+				} catch (ExceptionUDT e1) {
+				}
+				e.printStackTrace();
+			}
+			// traverse
+			server = new SocketUDT(TypeUDT.STREAM);
+			server.setBlocking(true);
+			sock = new SocketUDT(TypeUDT.STREAM);
+			sock.setBlocking(true);
+			try {
+				server.connect(new InetSocketAddress(node.server_host, node.server_port));
+				pac = new ConcurrentHashMap<String, String>();
+				pac.put("ID", node.ID);
+				pac.put("ID_target", ID_p);
+				try {
+					str = Packer.pack("LinkE", "01", pac);
+				} catch (PackException e1) {// just used for debug
+					e1.printStackTrace();
+				}
+				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																			// packet
+																			// LinkE01
+				server.receive(arr);// receive packet LinkE03
+				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+				node.empty_arr(str.length(), arr);
+				pac = Packer.unpack(str);
+				InetSocketAddress local_address = server.getLocalSocketAddress();
+				server.close();
+				if (pac.get("type").equals("ERR")) {// another Node is trying to
+													// connect with it.
+					throw new NodeException("Application denied by server.");
+				} else if (!pac.get("ID").equals(ID_p)) {// Error on the server
+															// side.
+					throw new NodeException("Error on the server side.");
+				}
+				IP_p = pac.get("IP");
+				Port_p = Integer.parseInt(pac.get("Port"));
+				sock.bind(local_address);
+				sock.setRendezvous(true);
+				try {
+					sock.connect(new InetSocketAddress(IP_p, Port_p));
+					pac = new ConcurrentHashMap<String, String>();
+					pac.put("ID", node.ID);
+					try {
+						str = Packer.pack("LinkE", "04", pac);
+					} catch (PackException e) {// just used for debug
+						e.printStackTrace();
+					}
+					sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																			// packet
+																			// LinkE04
+					sock.receive(arr);// receive packet LinkE04
+					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+					node.empty_arr(str.length(), arr);
+					pac = Packer.unpack(str);
+					if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
+							&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+							&& pac.get("ID").equals(ID_p))) {
+						try {
+							sock.close();
+						} catch (ExceptionUDT e1) {
+							e1.printStackTrace();
+						}
+						throw new NodeException("Unexpected packet from the peer node.");
+					}
+				} catch (ExceptionUDT e) {
+					e.printStackTrace();
+					tell_server(ID_p, false);
+					return null;
+				}
+				tell_server(ID_p, true);
+			} catch (ExceptionUDT e) {
+				try {
+					sock.close();
+				} catch (ExceptionUDT e1) {
+					e1.printStackTrace();
+				}
+				throw e;
+			} catch (PackException e) {
+				throw e;
+			} finally {
+				try {
+					server.close();
+				} catch (ExceptionUDT e) {
+					e.printStackTrace();
+				}
+			}
+			return sock;
+		} finally {
+			node.link_establish_locks.get(ID_p).unlock();
 		}
-		return sock;
 	}
 
 	/**
@@ -240,23 +306,13 @@ class LinkEstablisher {
 				}
 				throw new NodeException("Unexpected packet from the peer node.");
 			}
-		} catch (ExceptionUDT e) {
+		} catch (ExceptionUDT | PackException e) {
 			e.printStackTrace();
 			try {
 				sock.close();
 			} catch (ExceptionUDT e1) {
 				e1.printStackTrace();
 			}
-			tell_server(ID_p, false);
-			return false;
-		} catch (PackException e) {
-			e.printStackTrace();
-			try {
-				sock.close();
-			} catch (ExceptionUDT e1) {
-				e1.printStackTrace();
-			}
-			tell_server(ID_p, false);
 			return false;
 		}
 		tell_server(ID_p, true);
@@ -357,6 +413,68 @@ class LinkEstablisher {
 			}
 			throw e;
 		}
+		Thread t = new Thread(new NodeLink(ID_p, sock, node));
+		t.start();
+		return true;
+	}
+
+	public boolean establish_link_s3(String ID_p) throws ExceptionUDT {
+		byte arr[] = new byte[1024];
+		String str = new String();
+		Map<String, String> pac;
+		// direct connect from the peer
+		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
+		sock.setBlocking(true);
+		try {
+			sock.connect(new InetSocketAddress(node.node_IPs.get(ID_p), 2333));
+			pac = new ConcurrentHashMap<String, String>();
+			pac.put("ID", node.ID);
+			try {
+				str = Packer.pack("LinkE", "08", pac);
+			} catch (PackException e) {// just used for debug
+				e.printStackTrace();
+			}
+			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																	// packet
+																	// LinkE08
+			sock.receive(arr);// receive packet LinkE08
+			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+			node.empty_arr(str.length(), arr);
+			pac = Packer.unpack(str);
+			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
+					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("08")
+					&& pac.get("ID").equals(ID_p))) {
+				throw new NodeException("Unexpected packet from the peer node.");
+			}
+			InetSocketAddress local_address = sock.getLocalSocketAddress();
+			sock.close();
+			SocketUDT socket = new SocketUDT(TypeUDT.STREAM);
+			socket.setBlocking(true);
+			socket.bind(local_address);
+			socket.setSoTimeout(1000);
+			sock = socket.accept();
+			sock.receive(arr);// receive packet LinkE04
+			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+			node.empty_arr(str.length(), arr);
+			pac = Packer.unpack(str);
+			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
+					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+					&& pac.get("ID").equals(ID_p))) {
+				throw new NodeException("Unexpected packet from the peer node.");
+			}
+			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+																	// packet
+																	// LinkE04
+		} catch (ExceptionUDT | NodeException | PackException e) {
+			e.printStackTrace();
+			try {
+				sock.close();
+			} catch (ExceptionUDT e1) {
+				e1.printStackTrace();
+			}
+			return false;
+		}
+		tell_server(ID_p, true);
 		Thread t = new Thread(new NodeLink(ID_p, sock, node));
 		t.start();
 		return true;
