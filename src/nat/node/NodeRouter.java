@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +31,7 @@ class NodeRouter {
 	 * @param dest
 	 * @return next_hop
 	 */
-	protected String find_next_hop(String dest) {
+/*	protected String find_next_hop(String dest) {
 		ArrayList<String> rout = routing_table.get(dest);
 		for (int i = 0; i < rout.size(); i++) {
 			if (!node.links_p_l.get(rout.get(i)).isLocked()) {
@@ -40,5 +40,5 @@ class NodeRouter {
 		}
 		return null;
 	}
-
+*/
 }

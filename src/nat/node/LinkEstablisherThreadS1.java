@@ -1,7 +1,7 @@
 /**
  * 
  */
-package data_transferor;
+package nodetest;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -40,6 +40,8 @@ class LinkEstablisherThreadS1 implements Runnable {
 			SocketUDT accepter = new SocketUDT(TypeUDT.STREAM);
 			accepter.setBlocking(true);
 			accepter.bind(new InetSocketAddress(node.IP_local, 2333));
+                        accepter.listen(5);
+                        System.out.println("bind local : " + node.IP_local + ":" + 2333);
 			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					arr = new byte[1024];
@@ -62,7 +64,7 @@ class LinkEstablisherThreadS1 implements Runnable {
 						// TODO Something wrong
 					}
 				} catch (ExceptionUDT e) {
-					e.printStackTrace();
+//					e.printStackTrace();
 				} catch (NodeException e) {
 					e.printStackTrace();
 				} catch (PackException e) {

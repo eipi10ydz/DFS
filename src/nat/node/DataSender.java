@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -46,13 +46,13 @@ class DataSender implements Callable<Boolean> {
 	 * @see java.util.concurrent.Callable#call()
 	 */
 	@Override
-	public Boolean call() {// Ã¿µ÷Ò»´ÎÒ»¸öÏß³Ì
+	public Boolean call() {// æ¯è°ƒä¸€æ¬¡ä¸€ä¸ªçº¿ç¨‹
 		byte arr[] = new byte[4096];
 		String str = null;
 		Map<String, String> pac, pac_routd01 = null;
-		List<String> data_to_send = new ArrayList<>(); // ÇĞ¿éºóµÄÊı¾İ
+		List<String> data_to_send = new ArrayList<>(); // åˆ‡å—åçš„æ•°æ®
 		List<String> packets = new ArrayList<>();
-		int cnt; // °üµÄ×ÜÊıÄ¿
+		int cnt; // åŒ…çš„æ€»æ•°ç›®
 		int packet_cnt = 0;
 		String ID_p;
 		int i;
@@ -91,20 +91,20 @@ class DataSender implements Callable<Boolean> {
 			e.printStackTrace();
 			return false;
 		}
-		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // Â·¾¶Êı
+		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // è·¯å¾„æ•°
 		String srout = new String("Rout");
 		String scnt = new String("Cnt");
 		String shop = new String("Hop_");
 		for (i = 1; i <= rout_cnt; i++) {
-			int routi = Integer.parseInt(pac_routd01.get(srout+i));// °üÊı
+			int routi = Integer.parseInt(pac_routd01.get(srout+i));// åŒ…æ•°
 			int routi_cnt = Integer.parseInt(pac_routd01.get(srout+i+scnt));
 			pac = new ConcurrentHashMap<>();
 			ID_p = pac_routd01.get(srout+i+shop);
 			pac.put("From", node.ID);
 			pac.put("To", dest);
 			pac.put("No", Integer.toString(No1));
-			pac.put("NoBeg", Integer.toString(packet_cnt)); // °üµÄÆğÊ¼±àºÅ
-			pac.put("HopCnt", pac_routd01.get(srout+i+scnt));// Ã¿¸öÂ·¾¶µÄ½ÚµãÊı
+			pac.put("NoBeg", Integer.toString(packet_cnt)); // åŒ…çš„èµ·å§‹ç¼–å·
+			pac.put("HopCnt", pac_routd01.get(srout+i+scnt));// æ¯ä¸ªè·¯å¾„çš„èŠ‚ç‚¹æ•°
 			pac.put("PackCnt", pac_routd01.get(srout+i));
 			for (int j = 1; j <= routi_cnt; j++) {
 				pac.put(shop+j, pac_routd01.get(srout+i+shop+j));
@@ -127,8 +127,19 @@ class DataSender implements Callable<Boolean> {
 				}
 				packets.add(str);
 			}
-			DataSender2.Send(node, ID_p, packets);
-		}
+                        while (true) 
+                        {
+                            try 
+                            {
+                                DataSender2.Sender(node, ID_p, packets);
+                                break;
+                            } 
+                            catch (ExceptionUDT e) 
+                            {
+                                //é‡å‘...
+                            }
+                        }
+                }
 		while (true) {
 			if (finished_list.contains(No1))
 				return true;

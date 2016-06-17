@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -40,12 +40,14 @@ class ServerLink implements Runnable {
 		Map<String, String> pac;
 		try {
 			SocketUDT server = new SocketUDT(TypeUDT.STREAM);
+                        SocketUDT sock = null;
 			server.setBlocking(true);
 			server.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
+                        server.listen(10);
 			while (true) {
 				try {
 					arr = new byte[1024];
-					SocketUDT sock = server.accept();
+					sock = server.accept();
 					sock.receive(arr);
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 					pac = Packer.unpack(str);
@@ -76,7 +78,8 @@ class ServerLink implements Runnable {
 					e.printStackTrace();
 				} catch (ExceptionUDT e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+                                      
+				//	e.printStackTrace();
 				} catch (NodeException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

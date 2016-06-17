@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,6 +45,7 @@ public class Node {
 	protected Set<String> nodeIDs;
 	protected Map<String, String> UName_ID;
 	protected Thread node_thread;
+        protected Map<Integer, DataReceiver> dataReceiver;
 
 	protected String IP_local;
 	protected Map<String, String> node_IPs;
@@ -88,6 +89,7 @@ public class Node {
 	public Node(String user_name, String server_host, int server_port)
 			throws ExceptionUDT, PackException, NodeException {
 		this.user_name = user_name;
+                this.dataReceiver = new ConcurrentHashMap<>();
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
 		UName_ID = new ConcurrentHashMap<>();
 		node_IPs = new ConcurrentHashMap<>();
@@ -222,7 +224,7 @@ public class Node {
 			result = data_to_send.submit(new DataSender(this, ID_p, str));
 			return result;
 		} else {
-			throw new IllegalArgumentException("The destination dose not exist.");
+			throw new IllegalArgumentException("The destination does not exist.");
 		}
 	}
 

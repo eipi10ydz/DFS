@@ -126,6 +126,8 @@ class MultiServerImplementation implements Runnable
                     case "02" :
                         nat_request(info, sock);
                         break;
+                    case "06" :
+                        informDirectConnect(info, sock);
                 }
             }
             break;

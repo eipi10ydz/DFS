@@ -1,7 +1,7 @@
 /**
  * 
  */
-package data_transferor;
+package nodetest;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -74,6 +74,7 @@ class LinkEstablisher {
 				socket.setBlocking(true);
 				socket.bind(local_address);
 				socket.setSoTimeout(1000);
+                                socket.listen(5);
 				sock = socket.accept();
 				sock.receive(arr);// receive packet LinkE04
 				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
@@ -83,6 +84,13 @@ class LinkEstablisher {
 						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
 					throw new NodeException("Unexpected packet from the peer node.");
+				}
+                                pac = new ConcurrentHashMap<String, String>();
+				pac.put("ID", node.ID);
+				try {
+					str = Packer.pack("LinkE", "04", pac);
+				} catch (PackException e) {// just used for debug
+					e.printStackTrace();
 				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
@@ -100,7 +108,7 @@ class LinkEstablisher {
 					sock.close();
 				} catch (ExceptionUDT e1) {
 				}
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 			// direct connect from the peer
 			SocketUDT server = null;
@@ -119,7 +127,7 @@ class LinkEstablisher {
 				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																			// packet
 																			// LinkE06
-				Timer timer = new Timer(5000);// TODO 5s - may be too short?
+				Timer timer = new Timer(10000);// TODO 10s - may be too short?
 				timer.start();
 				while (!node.link_establish_socks.containsKey(ID_p)) {
 					if (timer.isExpired())// timeout
@@ -131,9 +139,7 @@ class LinkEstablisher {
 				node.link_establish_socks.remove(ID_p);
 				// similar with establish_link_s1
 				InetSocketAddress remote_address = sock.getRemoteSocketAddress();
-				if (!node.node_IPs.get(ID_p).equals(remote_address.getAddress().getHostAddress())) {
-					throw new NodeException("Unexpected packet from the peer node.");
-				}
+                                System.out.println("remote:" + remote_address.getAddress().getHostAddress() + "\nlocal:" + node.node_IPs.get(ID_p));
 				pac = new ConcurrentHashMap<String, String>();
 				pac.put("ID", node.ID);
 				try {
@@ -143,11 +149,19 @@ class LinkEstablisher {
 				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
-																		// LinkE08
+				InetSocketAddress local = sock.getLocalSocketAddress();														// LinkE08
 				sock.close();
 				sock = new SocketUDT(TypeUDT.STREAM);
 				sock.setBlocking(true);
-				sock.connect(remote_address);
+                                sock.bind(local);
+                                sock.connect(remote_address);
+                                pac = new ConcurrentHashMap<String, String>();
+				pac.put("ID", node.ID);
+				try {
+					str = Packer.pack("LinkE", "04", pac);
+				} catch (PackException e) {// just used for debug
+					e.printStackTrace();
+				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
 																		// LinkE04
@@ -212,6 +226,11 @@ class LinkEstablisher {
 				sock.setRendezvous(true);
 				try {
 					sock.connect(new InetSocketAddress(IP_p, Port_p));
+                                        if(sock.isConnected())
+                                        {
+                                            sock.send("".getBytes());
+                                            System.out.println("connect success");
+                                        }
 					pac = new ConcurrentHashMap<String, String>();
 					pac.put("ID", node.ID);
 					try {
@@ -232,12 +251,14 @@ class LinkEstablisher {
 						try {
 							sock.close();
 						} catch (ExceptionUDT e1) {
-							e1.printStackTrace();
+						//	e1.printStackTrace();
+                                                //      sock has been closed...    
 						}
 						throw new NodeException("Unexpected packet from the peer node.");
 					}
 				} catch (ExceptionUDT e) {
-					e.printStackTrace();
+//					e.printStackTrace();
+                                    //nat traversal failed...
 					tell_server(ID_p, false);
 					return null;
 				}
@@ -284,14 +305,6 @@ class LinkEstablisher {
 		String str = new String();
 		Map<String, String> pac;
 		InetSocketAddress remote_address = sock.getRemoteSocketAddress();
-		if (!node.node_IPs.get(ID_p).equals(remote_address.getAddress().getHostAddress())) {
-			try {
-				sock.close();
-			} catch (ExceptionUDT e) {
-				e.printStackTrace();
-			}
-			return false;
-		}
 		// direct connect
 		pac = new ConcurrentHashMap<String, String>();
 		pac.put("ID", node.ID);
@@ -302,11 +315,12 @@ class LinkEstablisher {
 		}
 		try {
 			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
-																	// packet
+                        InetSocketAddress local = sock.getLocalSocketAddress();															// packet
 																	// LinkE04
 			sock.close();
 			sock = new SocketUDT(TypeUDT.STREAM);
 			sock.setBlocking(true);
+                        sock.bind(local);
 			sock.connect(remote_address);
 			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																	// packet
@@ -387,7 +401,12 @@ class LinkEstablisher {
 			sock.setRendezvous(true);
 			try {
 				sock.connect(new InetSocketAddress(IP_p, Port_p));
-				pac = new ConcurrentHashMap<String, String>();
+				if(sock.isConnected())
+                                {
+                                    sock.send("".getBytes());
+                                    System.out.println("connect success");
+                                }
+                                pac = new ConcurrentHashMap<String, String>();
 				pac.put("ID", node.ID);
 				try {
 					str = Packer.pack("LinkE", "04", pac);
@@ -445,8 +464,9 @@ class LinkEstablisher {
 		SocketUDT sock = new SocketUDT(TypeUDT.STREAM);
 		sock.setBlocking(true);
 		try {
+			System.out.println("after linke07, direct connect to another:" + node.node_IPs.get(ID_p));
 			sock.connect(new InetSocketAddress(node.node_IPs.get(ID_p), 2333));
-			pac = new ConcurrentHashMap<String, String>();
+                        pac = new ConcurrentHashMap<String, String>();
 			pac.put("ID", node.ID);
 			try {
 				str = Packer.pack("LinkE", "08", pac);
@@ -471,17 +491,26 @@ class LinkEstablisher {
 			socket.setBlocking(true);
 			socket.bind(local_address);
 			socket.setSoTimeout(1000);
+                        socket.listen(5);
 			sock = socket.accept();
 			sock.receive(arr);// receive packet LinkE04
 			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 			node.empty_arr(str.length(), arr);
 			pac = Packer.unpack(str);
+                        System.out.println(str);
 			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
 					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 					&& pac.get("ID").equals(ID_p))) {
 				throw new NodeException("Unexpected packet from the peer node.");
 			}
-			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+                        pac = new ConcurrentHashMap<String, String>();
+			pac.put("ID", node.ID);
+			try {
+                            str = Packer.pack("LinkE", "04", pac);
+			} catch (PackException e) {// just used for debug
+                            e.printStackTrace();
+			}
+                        sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																	// packet
 																	// LinkE04
 		} catch (ExceptionUDT | NodeException | PackException e) {
