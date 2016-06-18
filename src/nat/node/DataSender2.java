@@ -41,7 +41,7 @@ public class DataSender2 {
 			}
 			try {
 				Thread.sleep(700);
-			} catch (InterruptedException e1) {
+			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
