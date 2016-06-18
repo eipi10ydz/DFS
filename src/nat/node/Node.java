@@ -103,7 +103,8 @@ public class Node {
 		this.server_host = server_host;
 		this.server_port = server_port;
 		this.data_receiver = new ConcurrentHashMap<>();
-		data_to_send = Executors.newCachedThreadPool();
+		this.data_to_send = Executors.newCachedThreadPool();
+		this.data_resend = new ConcurrentHashMap<>();
 		try {
 			IP_local = getRealLocalIP();
 			System.out.println(IP_local);
@@ -215,7 +216,7 @@ public class Node {
 														// hold its result
 			Future<Boolean> result;
 			result = data_to_send.submit(new DataSender(this, ID_p, str));
-			Logger.getLogger(Node.class.getName()).log(Level.CONFIG, "Sending starts.");
+			Logger.getLogger(Node.class.getName()).log(Level.INFO, "Sending starts.");
 			return result;
 		} else {
 			throw new IllegalArgumentException("The destination does not exist.");

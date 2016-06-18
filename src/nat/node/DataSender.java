@@ -59,14 +59,19 @@ class DataSender implements Callable<Boolean> {
 		}
 		cnt = i;
 		// Ask for router information
-		try {
-			ask_router_info();
-		} catch (NodeException e) {
-			e.printStackTrace();
-			return false;// TODO retry?
-		} catch (ExceptionUDT e) {
-			e.printStackTrace();
-			return false;
+		while (true) {
+			try {
+				ask_router_info();
+				break;
+			} catch (NodeException e) {
+				e.printStackTrace();
+				return false;// TODO retry?
+			} catch (ExceptionUDT e) {
+				e.printStackTrace();
+				return false;
+			} catch (LinkException e) {
+				// retry
+			}
 		}
 		pack_send(pac);
 		while (true) {
@@ -81,7 +86,7 @@ class DataSender implements Callable<Boolean> {
 		// return false;
 	}
 
-	private Map<String, String> ask_router_info() throws ExceptionUDT, NodeException {
+	private Map<String, String> ask_router_info() throws ExceptionUDT, NodeException, LinkException {
 		byte arr[] = new byte[4096];
 		String str = null;
 		Map<String, String> pac = null;
@@ -106,13 +111,19 @@ class DataSender implements Callable<Boolean> {
 			Node.empty_arr(4096, arr);
 			try {
 				pac = Packer.unpack(str);
-				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.get("type").equals("RoutD")
-						&& pac.get("type_d").equals("01"))) {
-					throw new NodeException("Unexpected packet from the server.");
-				}
-				break;
 			} catch (PackException e) {
+				throw new LinkException("Unexpected packet from the server." + pac.toString());
 			}
+			if (!(pac.containsKey("type") && pac.containsKey("type_d"))) {
+				throw new LinkException("Unexpected packet from the server." + pac.toString());
+			}
+			if ((pac.get("type").equals("ERR") && pac.get("type_d").equals("02"))) {
+				throw new NodeException("Routing failed.");
+			}
+			if (!(pac.get("type").equals("RoutD") && pac.get("type_d").equals("01"))) {
+				throw new LinkException("Unexpected packet from the server." + pac.toString());
+			}
+			break;
 		}
 		return pac;
 	}
@@ -150,7 +161,7 @@ class DataSender implements Callable<Boolean> {
 			packets.add(str);
 			for (int j = 0; j != routi; j++) {
 				pac = new ConcurrentHashMap<>();
-				pac.put("No", Integer.toString(No1));
+				pac.put("No", Integer.toString(packet_cnt));
 				pac.put("Content", data_to_send.get(packet_cnt));
 				packet_cnt++;
 				try {
@@ -162,10 +173,22 @@ class DataSender implements Callable<Boolean> {
 			}
 			while (true) {
 				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+				}
+				try {
 					DataSender2.Sender(node, ID_p, packets);
 					break;
+				} catch (LinkException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (NodeException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				} catch (ExceptionUDT e) {
-					// ÖØ·¢...
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}

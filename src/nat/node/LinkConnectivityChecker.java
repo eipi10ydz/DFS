@@ -65,7 +65,7 @@ class LinkConnectivityChecker implements Runnable {
 							} catch (Exception e) {
 							}
 						}
-					} catch (PackException | ExceptionUDT | NodeException e) {
+					} catch (LinkException | NodeException | ExceptionUDT e) {
 						timer.postpone(20000 * timer.getCnt());
 						timer.start();
 						e.printStackTrace();
@@ -110,7 +110,7 @@ class LinkConnectivityChecker implements Runnable {
 					} catch (Exception e) {
 					}
 				}
-			} catch (PackException | ExceptionUDT | NodeException e) {
+			} catch (LinkException | NodeException | ExceptionUDT e) {
 				new_link_timer(nodeID);
 				e.printStackTrace();
 			}

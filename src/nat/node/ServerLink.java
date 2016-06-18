@@ -50,8 +50,11 @@ class ServerLink implements Runnable {
 					sock = server.accept();
 					sock.receive(arr);
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-					pac = Packer.unpack(str);
-					sock.close();
+					try {
+						pac = Packer.unpack(str);
+					} catch (PackException e) {
+						throw new LinkException("Unexpected packet from the server.", e);
+					}
 					tmp = null;
 					switch (pac.get("type")) {
 					case ("NodeI"):
@@ -73,21 +76,24 @@ class ServerLink implements Runnable {
 						tmp = "ERR";
 						break;
 					default:
-						throw new NodeException("Unknown type" + pac.toString());
+						throw new LinkException("Unexpected packet from the server." + pac.toString());
 					}
 					node.messages_from_server.get(tmp).add(pac);
-				} catch (PackException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				} catch (ExceptionUDT e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				} catch (NodeException e) {
+				} catch (LinkException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} finally {
+					try {
+						sock.close();
+					} catch (ExceptionUDT e) {
+					}
 				}
 			}
 		} catch (ExceptionUDT e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

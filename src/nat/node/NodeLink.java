@@ -79,8 +79,6 @@ public class NodeLink implements Runnable {
 					String No = pac.get("No");
 					if (Integer.parseInt(pac.get("HopCnt")) == 1) {
 						// 此处为终点节点
-						String content = "";
-						String[] pack = new String[pack_cnt];
 						if ((!node.data_receiver.containsKey(Integer.parseInt(No)))
 								|| node.data_receiver.get(Integer.parseInt(No)) == null) {
 							DataReceiver temp = new DataReceiver(From, packCntOriginal, Integer.parseInt(No),
@@ -94,7 +92,6 @@ public class NodeLink implements Runnable {
 							node.data_receiver.get(Integer.parseInt(No)).pack
 									.put(Integer.parseInt(pac.get("No").trim()), pac.get("Content").trim());
 						}
-						// xq method调用
 						Map<String, String> informServerMap = new HashMap<>();
 						informServerMap.put("type", "DataF");
 						informServerMap.put("From", From);
@@ -141,27 +138,33 @@ public class NodeLink implements Runnable {
 					e.printStackTrace();
 				}
 			}
-		} catch (
-
-		ExceptionUDT e) {
+		} catch (LinkException | NodeException | ExceptionUDT e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			while (true) {
 				try {
 					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+				}
+				try {
 					DataSender2.Sender(this.node, this.ID_p, packageSend);
 					break;
-				} catch (InterruptedException | ExceptionUDT e1) {
-					// 重发
+				} catch (LinkException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (NodeException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (ExceptionUDT e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
 				}
 			}
 		} finally {
 			try {
 				socket.close();
 			} catch (ExceptionUDT e) {
-				// TODO Auto-generated catch block
-				// socket已关闭...
-				e.printStackTrace();
 			}
 		}
 	}
