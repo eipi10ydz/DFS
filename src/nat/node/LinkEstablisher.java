@@ -126,7 +126,7 @@ class LinkEstablisher {
 				server.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																			// packet
 																			// LinkE06
-				Timer timer = new Timer(5000);// TODO 10s - may be too short?
+				Timer timer = new Timer(10000);// TODO 10s - may be too short?
 				timer.start();
 				while ((sock = node.link_establish_socks.remove(ID_p)) == null) {
 					if (timer.isExpired())// timeout
@@ -223,7 +223,7 @@ class LinkEstablisher {
 				try {
 					sock.connect(new InetSocketAddress(IP_p, Port_p));
 					if (sock.isConnected()) {
-						sock.send("".getBytes());
+						sock.send(" ".getBytes());
 						System.out.println("connect success");
 					}
 					pac = new ConcurrentHashMap<String, String>();
@@ -370,10 +370,6 @@ class LinkEstablisher {
 		sock.setBlocking(true);
 		try {
 			server.connect(new InetSocketAddress(node.server_host, node.server_port));
-			if (sock.isConnected()) {
-				sock.send("".getBytes());
-				System.out.println("connect success");
-			}
 			pac = new ConcurrentHashMap<String, String>();
 			pac.put("ID", node.ID);
 			pac.put("ID_target", ID_p);
@@ -395,6 +391,11 @@ class LinkEstablisher {
 			sock.setRendezvous(true);
 			try {
 				sock.connect(new InetSocketAddress(IP_p, Port_p));
+				if (sock.isConnected()) 
+				{
+				    sock.send(" ".getBytes());
+				    System.out.println("connect success");
+			    }
 				pac = new ConcurrentHashMap<String, String>();
 				pac.put("ID", node.ID);
 				try {
