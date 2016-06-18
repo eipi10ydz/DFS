@@ -2,8 +2,6 @@ package data_transferor;
 
 import java.util.Map;
 
-import com.barchart.udt.ExceptionUDT;
-
 class LinkEstablisherThreadS2 implements Runnable {
 
 	private Node node;
