@@ -1,4 +1,4 @@
-package nodetest;
+package data_transferor;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -39,11 +39,11 @@ class ServerLink implements Runnable {
 		String tmp;
 		Map<String, String> pac;
 		try {
+			SocketUDT sock = null;
 			SocketUDT server = new SocketUDT(TypeUDT.STREAM);
-                        SocketUDT sock = null;
 			server.setBlocking(true);
 			server.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
-                        server.listen(10);
+			server.listen(10);
 			while (true) {
 				try {
 					arr = new byte[1024];
@@ -66,6 +66,9 @@ class ServerLink implements Runnable {
 					case ("DataF"):
 						tmp = "Data";
 						break;
+					case ("RoutD"):
+						tmp = "Data";
+						break;
 					case ("ERR"):
 						tmp = "ERR";
 						break;
@@ -78,8 +81,7 @@ class ServerLink implements Runnable {
 					e.printStackTrace();
 				} catch (ExceptionUDT e) {
 					// TODO Auto-generated catch block
-                                      
-				//	e.printStackTrace();
+					e.printStackTrace();
 				} catch (NodeException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
