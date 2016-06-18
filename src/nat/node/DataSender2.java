@@ -2,10 +2,8 @@ package nodetest;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Map;
 import com.barchart.udt.ExceptionUDT;
 import com.barchart.udt.SocketUDT;
-import com.barchart.udt.TypeUDT;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +23,7 @@ public class DataSender2 {
             }
 		for(String str : packets){
 			try{
-                            sock.send(str.getBytes(Charset.forName("ISO-8859-1")));	
+                            sock.send(str.getBytes(Charset.forName("ISO-8859-1")));
 			}catch(ExceptionUDT e){
 				e.printStackTrace();
 				throw e;

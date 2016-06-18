@@ -39,11 +39,10 @@ public class Packer {
 					return json;
 				}
 		 	case "Data" :
-		 		if(!pac.containsKey("From")||!pac.containsKey("To")||!pac.containsKey("Content")||
-		 																		!pac.containsKey("NO")){
+		 		if(!pac.containsKey("Content")||!pac.containsKey("No")){
 		 			throw new PackException("包的结构不对");
 		 		}
-		 		else if(pac.size() != 4){
+		 		else if(pac.size() != 2){
 		 			throw new PackException("包的结构不对");
 		 		}
 		 		else{
@@ -100,6 +99,22 @@ public class Packer {
 		 			json = gson.toJson(pac);
 		 			return json;
 		 		}
+		 	case "DataR" :
+		 		if(!pac.containsKey("ID")||!pac.containsKey("ID_target")||!pac.containsKey("No")){
+		 			throw new PackException("包的结构不对");
+		 		}
+		 		else if(pac.size() != 3){
+		 			throw new PackException("包的结构不对");
+		 		}
+		 		else{
+		 			pac.put("type", Type);
+		 			json = gson.toJson(pac);
+		 			return json;
+		 		}
+                        case "RoutD":
+                            pac.put("type", Type);
+                            json = gson.toJson(pac);
+                            return json;
 		 	default:
 		 		throw new PackException("type类型不对");
 		}
@@ -234,7 +249,8 @@ public class Packer {
 		 							throw new PackException("包的结构不对"); 
 		 						 }
 		 					 }
-		 					 if(pac.size() != Cnt + 7){
+                                                         System.out.println(gson.toJson(pac));
+		 					 if(pac.size() != (Cnt + 7)){
 		 						 throw new PackException("包结构不对");
 		 					 }
 		 				}

@@ -128,36 +128,39 @@ class MultiServerImplementation implements Runnable
                         break;
                     case "06" :
                         informDirectConnect(info, sock);
+                        break;
                 }
             }
-            break;
+                break;
             case "LinkC" :
             {
                 record_info(info, sock);
             }
-            break;
+                break;
             case "NodeI" :
             {
                 switch(info.get("type_d").trim())
                 {
                     case "00" :
                         register(info, sock);
+                        break;
                 }
             }
-            break;
+                break;
             case "RoutQ" : 
             {
                 return_route(info, sock);
+                break;
             }
-            break;
             case "RoutI" : 
             {
                 map_edge_change(info, sock);
             }
-            break;
+                break;
             case "DataF" :
             {
                 informSendSuccess(info, sock);
+                break;
             }
         }
     }
@@ -486,7 +489,7 @@ class MultiServerImplementation implements Runnable
         String IP_from = null, port_from = null;
         try
         {
-            IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
+            IP_from = sock.getRemoteInetAddress().getHostAddress();
             port_from = sock.getRemoteInetPort() + "";
         }
         catch(NullPointerException e)
@@ -533,6 +536,7 @@ class MultiServerImplementation implements Runnable
                         connect_list.add(client_from);
                 }
                 record.put(pair_from,"true");
+                map_edge_change(parseInt(destination), parseInt(ID_source));
             }//if connectivity=true
             else
             {
@@ -580,18 +584,46 @@ class MultiServerImplementation implements Runnable
         }
     }
 */
+    private void map_edge_change(int from, int to)
+    {
+        try
+        {
+            this.lock.lock();
+            this.fi.weight[from][to] = this.fi.weight[to][from] = 2333;
+            this.fi.res_init();
+            this.fi.path_init();
+            this.fi.floyd();
+        }
+        catch (Exception e) 
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try 
+            {
+                this.lock.unlock();
+            } 
+            catch (Exception e) 
+            {
+            
+            }
+        }
+    }
+    
     private void map_edge_change(Map<String, String> info, SocketUDT sock) 
     {
         double border = 123;//定义一个border,旧的和新的差距超过这个border,就直接新代旧，否则取平均      
         int from = Integer.parseInt(info.get("ID"));
-        int to = Integer.parseInt(info.get("to"));
+        int to = Integer.parseInt(info.get("ID_target"));
         double RTT, bandwidth, lostRate, weight;
         try {
             lock.lock();
             if(info.get("RTT").trim().equals("NaN"))
             {
                 //此处需要把RTT, bandwidth, lostRate变为默认值
-                
+                map_edge_change(from, to);
+                return;
             }
             RTT = Double.parseDouble(info.get("RTT"));
             bandwidth = Double.parseDouble(info.get("bandwidth"));
@@ -649,7 +681,7 @@ class MultiServerImplementation implements Runnable
         int from = Integer.parseInt(info.get("ID"));
         int to = Integer.parseInt(info.get("ID_target"));
         int cnt = Integer.parseInt(info.get("Cnt"));
-        int Rout1, Rout2, Rout3, Rout1cnt, Rout2cnt, Rout3cnt;
+        int Rout1, Rout2, Rout3, Rout1cnt = 0, Rout2cnt = 0, Rout3cnt = 0;
         int Routcnt;
         Map<String, String> sendBack;
         sendBack = new HashMap<>();
@@ -707,27 +739,29 @@ class MultiServerImplementation implements Runnable
             if (route_list.size() >= 3) 
             {
                 Routcnt = 3;
+                Rout3cnt = route_list.get(2).size() - 1;
             } 
             else if (route_list.size() == 2) 
             {
                 Routcnt = 2;
+                Rout1cnt = route_list.get(0).size() - 1;
+                Rout2cnt = route_list.get(1).size() - 1;
             }
             else if (route_list.size() == 1) 
             {
                 Routcnt = 1;
+                Rout1cnt = route_list.get(0).size() - 1;
             } 
             else 
             {
                 Routcnt = 0;
             }
-            Rout1cnt = route_list.get(0).size() - 1;
-            Rout2cnt = route_list.get(1).size() - 1;
-            Rout3cnt = route_list.get(2).size() - 1;
             sendBack.put("type", "RoutD");
             sendBack.put("type_d", "01");
-            sendBack.put("From", from + "");
-            sendBack.put("To", to + "");
+            sendBack.put("From", String.format("%05d", from));
+            sendBack.put("To", String.format("%05d", to));
             sendBack.put("RoutCnt", Routcnt + "");
+            sendBack.put("No", info.get("No"));
             switch (Routcnt) {
                 case 3:
                     Rout1 = (int) Math.round(cnt * 0.5);
@@ -736,18 +770,19 @@ class MultiServerImplementation implements Runnable
                     sendBack.put("Rout1Cnt", Rout1cnt + "");
                     sendBack.put("Rout1", Rout1 + "");
                     for (int i = 1; i <= Rout1cnt; i++) {
-                        sendBack.put("Rout1Hop_" + i, route_list.get(0).get(i) + "");
+                        sendBack.put("Rout1Hop_" + i, String.format("%05d", route_list.get(0).get(i)));
                     }
                     sendBack.put("Rout2Cnt", Rout2cnt + "");
                     sendBack.put("Rout2", Rout2 + "");
                     for (int i = 1; i <= Rout2cnt; i++) {
-                        sendBack.put("Rout2Hop_" + i, route_list.get(1).get(i) + "");
+                        sendBack.put("Rout2Hop_" + i, String.format("%05d", route_list.get(1).get(i)));
                     }
                     sendBack.put("Rout3Cnt", Rout3cnt + "");
                     sendBack.put("Rout3", Rout3 + "");
                     for (int i = 1; i <= Rout3cnt; i++) {
-                        sendBack.put("Rout3Hop_" + i, route_list.get(2).get(i) + "");
+                        sendBack.put("Rout3Hop_" + i, String.format("%05d", route_list.get(2).get(i)));
                     }
+                    break;
                 case 2:
                     Rout1 = (int) Math.round(cnt * 0.7);
                     Rout2 = (int) Math.round(cnt * 0.3);
@@ -755,26 +790,29 @@ class MultiServerImplementation implements Runnable
                     sendBack.put("Rout1Cnt", Rout1cnt + "");
                     sendBack.put("Rout1", Rout1 + "");
                     for (int i = 1; i <= Rout1cnt; i++) {
-                        sendBack.put("Rout1Hop_" + i, route_list.get(0).get(i) + "");
+                        sendBack.put("Rout1Hop_" + i, String.format("%05d", route_list.get(0).get(i)));
                     }
                     sendBack.put("Rout2Cnt", Rout2cnt + "");
                     sendBack.put("Rout2", Rout2 + "");
                     for (int i = 1; i <= Rout2cnt; i++) {
-                        sendBack.put("Rout2Hop_" + i, route_list.get(1).get(i) + "");
+                        sendBack.put("Rout2Hop_" + i, String.format("%05d", route_list.get(1).get(i)));
                     }
-
+                    break;
                 case 1:
                     Rout1 = cnt;
                     Rout2 = Rout3 = 0;
                     sendBack.put("Rout1Cnt", Rout1cnt + "");
                     sendBack.put("Rout1", Rout1 + "");
                     for (int i = 1; i <= Rout1cnt; i++) {
-                        sendBack.put("Rout1Hop_" + i, route_list.get(0).get(i) + "");
+                        sendBack.put("Rout1Hop_" + i, String.format("%05d", route_list.get(0).get(i)));
                     }
+                    break;
                 default:
                     sendBack.put("type", "ERR");
                     sendBack.put("type_d", "02");
+                    break;
             }
+            System.out.println(this.gson_toJson.toJson(sendBack));
             sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
         }
     }

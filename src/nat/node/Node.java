@@ -222,6 +222,7 @@ public class Node {
 														// hold its result
 			Future<Boolean> result;
 			result = data_to_send.submit(new DataSender(this, ID_p, str));
+                        System.out.println("begin send...");
 			return result;
 		} else {
 			throw new IllegalArgumentException("The destination does not exist.");

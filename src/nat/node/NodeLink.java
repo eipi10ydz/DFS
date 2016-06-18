@@ -75,6 +75,7 @@ public class NodeLink implements Runnable
                 {
                     node.empty_arr(str.length(), recv);
                     pac = Packer.unpack(str);
+                    System.out.println("NodeLink:" + str);
                     if(pac.get("type").trim().equals("HEARTBEAT"))
                         return;
                     int pack_cnt = Integer.parseInt(pac.get("PackCnt").trim());
@@ -87,6 +88,7 @@ public class NodeLink implements Runnable
                         } 
                         catch (ExceptionUDT e) 
                         {
+                            e.printStackTrace();
                             //收到的包不全，是否请求Server重发
                         }                            
                     }
@@ -98,15 +100,19 @@ public class NodeLink implements Runnable
                     String From = pac.get("From");
                     String To = pac.get("To");
                     String No = pac.get("No");
-                    if(pac.get("HopCnt").trim().equals("0"))
+                    if(Integer.parseInt(pac.get("HopCnt")) == 1)
                     {
                         //此处为终点节点
+                        System.out.println("终点...");
                         String content = "";
                         String [] pack = new String[pack_cnt];
                         if((!node.dataReceiver.containsKey(Integer.parseInt(No))) || node.dataReceiver.get(Integer.parseInt(No)) == null)
                         {
-                            node.dataReceiver.put(Integer.parseInt(No), new DataReceiver(From, packCntOriginal, Integer.parseInt(No), this.node));
-                        }    
+                            DataReceiver temp = new DataReceiver(From, packCntOriginal, Integer.parseInt(No), this.node);
+                            Thread iThread = new Thread(temp);
+                            iThread.start();
+                            node.dataReceiver.put(Integer.parseInt(No), temp);
+                        }
                         for(int i = 0; i < pack_cnt; ++i)
                         {
                             pac = Packer.unpack(new String(arr[i], Charset.forName("ISO-8859-1")).trim());
@@ -141,11 +147,10 @@ public class NodeLink implements Runnable
                             }
                         }
                     }
-                    else 
+                    else
                     {       
                         //路由包
                         Map<String, String> sendNext = new HashMap<>();
-                        sendNext.put("type_d", "02");
                         sendNext.put("From", From);
                         sendNext.put("To", To);
                         sendNext.put("No", No);
@@ -156,7 +161,7 @@ public class NodeLink implements Runnable
                         for (int i = 1; i < nodeCnt; ++i)
                             sendNext.put("Hop_" + i, path.get(i));
                         packageSend = new ArrayList<>();
-                        packageSend.add(Packer.pack("RoutD", sendNext));
+                        packageSend.add(Packer.pack("RoutD", "02", sendNext));
                         for (int i = 0; i < pack_cnt; ++i)
                             packageSend.add(new String(arr[i], Charset.forName("ISO-8859-1")).trim());
                         DataSender2.Sender(this.node, this.ID_p, packageSend);

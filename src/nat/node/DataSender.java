@@ -76,12 +76,14 @@ class DataSender implements Callable<Boolean> {
 			} catch (PackException e) {// just used for debug
 				e.printStackTrace();
 			}
-			server.send(str.getBytes(Charset.forName("ISO-8859-1")));
-			while (true) {
+                        server.send(str.getBytes(Charset.forName("ISO-8859-1")));
+			while (true) 
+                        {
 				server.receive(arr);
 				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 				node.empty_arr(str.length(), arr);
 				pac_routd01 = Packer.unpack(str);
+                                System.out.println(str);
 				break;
 			}
 		} catch (PackException e) {
@@ -92,17 +94,18 @@ class DataSender implements Callable<Boolean> {
 			return false;
 		}
 		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // 路径数
-		String srout = new String("Rout");
-		String scnt = new String("Cnt");
-		String shop = new String("Hop_");
+		String srout = "Rout";
+		String scnt = "Cnt";
+		String shop = "Hop_";
 		for (i = 1; i <= rout_cnt; i++) {
 			int routi = Integer.parseInt(pac_routd01.get(srout+i));// 包数
 			int routi_cnt = Integer.parseInt(pac_routd01.get(srout+i+scnt));
 			pac = new ConcurrentHashMap<>();
-			ID_p = pac_routd01.get(srout+i+shop);
+			ID_p = pac_routd01.get(srout+i+shop+i);
 			pac.put("From", node.ID);
 			pac.put("To", dest);
 			pac.put("No", Integer.toString(No1));
+                        pac.put("Cnt", cnt + "");
 			pac.put("NoBeg", Integer.toString(packet_cnt)); // 包的起始编号
 			pac.put("HopCnt", pac_routd01.get(srout+i+scnt));// 每个路径的节点数
 			pac.put("PackCnt", pac_routd01.get(srout+i));
@@ -118,7 +121,7 @@ class DataSender implements Callable<Boolean> {
 			for (int j = 0; j != routi; j++) {
 				pac = new ConcurrentHashMap<>();
 				pac.put("No", Integer.toString(No1));
-				pac.put("content", data_to_send.get(packet_cnt));
+				pac.put("Content", data_to_send.get(packet_cnt));
 				packet_cnt++;
 				try {
 					str = Packer.pack("Data", pac);

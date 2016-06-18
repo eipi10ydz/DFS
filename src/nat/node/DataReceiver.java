@@ -15,6 +15,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +38,8 @@ public class DataReceiver implements Runnable
         this.from = from;
         this.cnt = cnt;
         this.No = No;
+        this.res = "";
+        this.pack = new ConcurrentHashMap<>();
         this.timer = new Timer(300000); //5分钟?
     }
     

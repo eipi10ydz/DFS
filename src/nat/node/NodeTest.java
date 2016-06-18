@@ -27,7 +27,7 @@ public class NodeTest {
         Node client = null;
         try {
             try {
-                client = new Node("test", server_host, server_port);
+                client = new Node("test1", server_host, server_port);
             } catch (ExceptionUDT | PackException ex) {
                 Logger.getLogger(NodeTest.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -43,10 +43,12 @@ public class NodeTest {
         {
             try 
             {
-                client.transfer_message("我就测试一下...", "00000");
-            } catch (Exception e) 
+                client.transfer_message("我就测试一下...", "test1");
+                return;
+            } 
+            catch (Exception e) 
             {
-            
+                e.printStackTrace();
             }
         }
     }
