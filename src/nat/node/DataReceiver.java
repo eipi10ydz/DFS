@@ -55,7 +55,7 @@ public class DataReceiver implements Runnable {
 			Map<String, String> info = new HashMap<>();
 			info.put("ID", from);
 			info.put("ID_target", node.ID);
-			info.put("No", No + "");
+			info.put("No", Integer.toString(No));
 			SocketUDT sock;
 			try {
 				sock = new SocketUDT(TypeUDT.STREAM);
