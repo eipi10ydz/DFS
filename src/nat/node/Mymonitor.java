@@ -1,20 +1,26 @@
-package nodetest;
+package data_transferor;
 
 import com.barchart.udt.MonitorUDT;
 import com.barchart.udt.SocketUDT;
 
-class Mymonitor extends MonitorUDT{
-	public Mymonitor(SocketUDT sock){
+/**
+ * @author lyx
+ *
+ */
+class MyMonitor extends MonitorUDT {
+	public MyMonitor(SocketUDT sock) {
 		super(sock);
 	}
-	public double get_mbpsBandwidth(){
+
+	public double get_mbpsBandwidth() {
 		return this.mbpsBandwidth;
 	}
-	public double get_msRTT(){
+
+	public double get_msRTT() {
 		return this.msRTT;
 	}
-	public double get_lostRate(){
-		return (double)(this.pktRecvTotal + this.pktSndLossTotal) / (this.pktRecvTotal + this.pktSentTotal);
+
+	public double get_lostRate() {
+		return (double) (this.pktRecvTotal + this.pktSndLossTotal) / (this.pktRecvTotal + this.pktSentTotal);
 	}
 }
-
