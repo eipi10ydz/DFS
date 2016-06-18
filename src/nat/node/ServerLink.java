@@ -79,9 +79,9 @@ class ServerLink implements Runnable {
 						throw new LinkException("Unexpected packet from the server." + pac.toString());
 					}
 					node.messages_from_server.get(tmp).add(pac);
-				} catch (ExceptionUDT e1) {
+				} catch (ExceptionUDT e) {
 					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					e.printStackTrace();
 				} catch (LinkException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
