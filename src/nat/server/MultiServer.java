@@ -740,6 +740,8 @@ class MultiServerImplementation implements Runnable
             {
                 Routcnt = 3;
                 Rout3cnt = route_list.get(2).size() - 1;
+                Rout2cnt = route_list.get(1).size() - 1;
+                Rout1cnt = route_list.get(0).size() - 1;
             } 
             else if (route_list.size() == 2) 
             {
