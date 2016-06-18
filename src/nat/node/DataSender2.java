@@ -12,15 +12,25 @@ import java.util.logging.Logger;
  *
  */
 public class DataSender2 {
-	static public void Sender(Node node, String ID_p, List<String> packets) throws ExceptionUDT {
+
+	/**
+	 * @param node
+	 * @param ID_p
+	 * @param packets
+	 * @throws NodeException
+	 * @throws LinkException
+	 * @throws ExceptionUDT
+	 */
+	static public void Sender(Node node, String ID_p, List<String> packets)
+			throws NodeException, LinkException, ExceptionUDT {
 		SocketUDT sock = null;
 		try {
 			sock = node.link_establisher.establish_link_m(ID_p); // Establish a
 																	// link with
 																	// peer
-		} catch (NodeException | ExceptionUDT | PackException e) {
+		} catch (NodeException | LinkException e) {
 			Logger.getLogger(DataSender2.class.getName()).log(Level.SEVERE, null, e);
-			//throw e;
+			throw e;
 		}
 		for (String str : packets) {
 			try {
@@ -30,7 +40,7 @@ public class DataSender2 {
 				throw e;
 			}
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(700);
 			} catch (InterruptedException e1) {
 				Thread.currentThread().interrupt();
 			}
