@@ -1,4 +1,4 @@
-package nodetest;
+package data_transferor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,7 +45,6 @@ public class Node {
 	protected Set<String> nodeIDs;
 	protected Map<String, String> UName_ID;
 	protected Thread node_thread;
-        protected Map<Integer, DataReceiver> dataReceiver;
 
 	protected String IP_local;
 	protected Map<String, String> node_IPs;
@@ -62,21 +61,18 @@ public class Node {
 	protected Map<String, ReentrantLock> link_locks;
 	protected Map<String, Timer> link_timers;
 
-	protected NodeRouter router;
-	protected Queue<String> node_inserted_rout;
-	protected Queue<String> node_deleted_rout;
-
 	protected InetAddress IP_local_server;
 	protected int Port_local_server;
 	protected String server_host;
 	protected int server_port;
 	protected InputStream in_s;
 	protected OutputStream out_s;
-	// protected SocketUDT server;
 	protected Thread server_link_thread;
 	protected Map<String, Queue<Map<String, String>>> messages_from_server;
 
 	protected ExecutorService data_to_send;
+	protected Map<Integer, DataReceiver> data_receiver;
+	protected Map<Integer, Map<String, String>> data_resend;
 
 	/**
 	 * @param user_name
@@ -89,7 +85,6 @@ public class Node {
 	public Node(String user_name, String server_host, int server_port)
 			throws ExceptionUDT, PackException, NodeException {
 		this.user_name = user_name;
-                this.dataReceiver = new ConcurrentHashMap<>();
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
 		UName_ID = new ConcurrentHashMap<>();
 		node_IPs = new ConcurrentHashMap<>();
@@ -100,9 +95,6 @@ public class Node {
 		link_establish_socks = new ConcurrentHashMap<>();
 		link_locks = new ConcurrentHashMap<>();
 		link_timers = new ConcurrentHashMap<>();
-		router = new NodeRouter(this);
-		node_inserted_rout = new ConcurrentLinkedQueue<>();
-		node_deleted_rout = new ConcurrentLinkedQueue<>();
 		messages_from_server = new ConcurrentHashMap<>();
 		messages_from_server.put("Node", new ConcurrentLinkedQueue<Map<String, String>>());
 		messages_from_server.put("Link", new ConcurrentLinkedQueue<Map<String, String>>());
@@ -110,6 +102,7 @@ public class Node {
 		messages_from_server.put("ERR", new ConcurrentLinkedQueue<Map<String, String>>());
 		this.server_host = server_host;
 		this.server_port = server_port;
+		this.data_receiver = new ConcurrentHashMap<>();
 		data_to_send = Executors.newCachedThreadPool();
 		try {
 			IP_local = getRealLocalIP();
@@ -138,7 +131,7 @@ public class Node {
 		server.send(str.getBytes(Charset.forName("ISO-8859-1")));// Insertion
 		server.receive(arr);
 		str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-		empty_arr(str.length(), arr);
+		Node.empty_arr(str.length(), arr);
 		pac = Packer.unpack(str);
 		ID = pac.get("ID");
 		pac = new ConcurrentHashMap<String, String>();
@@ -180,7 +173,7 @@ public class Node {
 	 * @param length
 	 * @param arr
 	 */
-	protected void empty_arr(int length, byte arr[]) {
+	protected static void empty_arr(int length, byte arr[]) {
 		for (int i = 0; i < length; i++) {
 			arr[i] = ' ';
 		}
@@ -214,15 +207,15 @@ public class Node {
 		ObjectOutputStream so = new ObjectOutputStream(bo);
 		so.writeObject(obj);
 		so.flush();
-		String str = new String(bo.toByteArray(), Charset.forName("ISO-8859-1"));
+		String str = bo.toString();
 		so.close();
 		bo.close();
-		String ID_p = UName_ID.get(peer);
+		String ID_p = UName_ID.get("peer");
 		if (ID_p != null && nodeIDs.contains(ID_p)) {// Launch a new task and
 														// hold its result
 			Future<Boolean> result;
 			result = data_to_send.submit(new DataSender(this, ID_p, str));
-                        System.out.println("begin send...");
+			Logger.getLogger(Node.class.getName()).log(Level.CONFIG, "Sending starts.");
 			return result;
 		} else {
 			throw new IllegalArgumentException("The destination does not exist.");
@@ -251,8 +244,8 @@ public class Node {
 						}
 					}
 				}
-			} catch (SocketException ex) {
-				Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
+			} catch (SocketException e) {
+				Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, e);
 			}
 		}
 		return IFCONFIG.toString();
