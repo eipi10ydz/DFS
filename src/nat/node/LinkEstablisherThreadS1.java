@@ -1,7 +1,4 @@
-/**
- * 
- */
-package nodetest;
+package data_transferor;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -12,7 +9,7 @@ import com.barchart.udt.SocketUDT;
 import com.barchart.udt.TypeUDT;
 
 /**
- * @author lenovo
+ * @author wzy
  *
  */
 class LinkEstablisherThreadS1 implements Runnable {
@@ -40,14 +37,15 @@ class LinkEstablisherThreadS1 implements Runnable {
 			SocketUDT accepter = new SocketUDT(TypeUDT.STREAM);
 			accepter.setBlocking(true);
 			accepter.bind(new InetSocketAddress(node.IP_local, 2333));
-                        accepter.listen(5);
-                        System.out.println("bind local : " + node.IP_local + ":" + 2333);
+			accepter.listen(5);
+			System.out.println("bind local : " + node.IP_local + ":" + 2333);
 			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					arr = new byte[1024];
 					SocketUDT sock = accepter.accept();
 					sock.receive(arr);// receive packet LinkE04
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+					Node.empty_arr(str.length(), arr);
 					pac = Packer.unpack(str);
 					if (pac.containsKey("type") && pac.get("type").equals("LinkE") && pac.containsKey("type_d")) {
 						if (pac.get("type_d").equals("04") && node.nodeIDs.contains(pac.get("ID"))) {
@@ -59,12 +57,11 @@ class LinkEstablisherThreadS1 implements Runnable {
 						} else {
 							// TODO Something wrong
 						}
-
 					} else {
 						// TODO Something wrong
 					}
 				} catch (ExceptionUDT e) {
-//					e.printStackTrace();
+					e.printStackTrace();
 				} catch (NodeException e) {
 					e.printStackTrace();
 				} catch (PackException e) {
