@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -32,10 +32,18 @@ class LinkConnectivityChecker implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-	public void run() {
+        public void run() {
 		establish_links();
 		while (!Thread.currentThread().isInterrupted()) {
 			// check link timers
+                        try 
+                        {
+                            Thread.sleep(1000);
+                        } 
+                        catch (Exception e) 
+                        {
+                             
+                        }
 			node.link_timers.forEach((nodeID, timer) -> {
 				if (!node.nodeIDs.contains(nodeID)) {// the peer node has
 														// dropped
@@ -65,7 +73,7 @@ class LinkConnectivityChecker implements Runnable {
 							} catch (Exception e) {
 							}
 						}
-					} catch (LinkException | NodeException | ExceptionUDT e) {
+					} catch (PackException | ExceptionUDT | NodeException e) {
 						timer.postpone(20000 * timer.getCnt());
 						timer.start();
 						e.printStackTrace();
@@ -110,7 +118,7 @@ class LinkConnectivityChecker implements Runnable {
 					} catch (Exception e) {
 					}
 				}
-			} catch (LinkException | NodeException | ExceptionUDT e) {
+			} catch (PackException | ExceptionUDT | NodeException e) {
 				new_link_timer(nodeID);
 				e.printStackTrace();
 			}

@@ -1,4 +1,7 @@
-package data_transferor;
+/**
+ * 
+ */
+package nodetest;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -9,7 +12,7 @@ import com.barchart.udt.SocketUDT;
 import com.barchart.udt.TypeUDT;
 
 /**
- * @author wzy
+ * @author lenovo
  *
  */
 class LinkEstablisherThreadS1 implements Runnable {
@@ -37,55 +40,47 @@ class LinkEstablisherThreadS1 implements Runnable {
 			SocketUDT accepter = new SocketUDT(TypeUDT.STREAM);
 			accepter.setBlocking(true);
 			accepter.bind(new InetSocketAddress(node.IP_local, 2333));
-			accepter.listen(5);
-			System.out.println("bind local : " + node.IP_local + ":" + 2333);
+                        accepter.listen(5);
+                        System.out.println("bind local : " + node.IP_local + ":" + 2333);
 			while (!Thread.currentThread().isInterrupted()) {
-				arr = new byte[1024];
-				SocketUDT sock = accepter.accept();
 				try {
+                                        try 
+                                        {
+                                            Thread.sleep(1000);
+                                        } 
+                                        catch (Exception e) 
+                                        {
+
+                                        }
+					arr = new byte[1024];
+					SocketUDT sock = accepter.accept();
 					sock.receive(arr);// receive packet LinkE04
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 					Node.empty_arr(str.length(), arr);
-					try {
-						try {
-							pac = Packer.unpack(str);
-						} catch (PackException e) {
-							throw new LinkException("Unexpected packet from the peer node.", e);
-						}
-						if (pac.containsKey("type") && pac.get("type").equals("LinkE") && pac.containsKey("type_d")) {
-							if (pac.get("type_d").equals("04") && node.nodeIDs.contains(pac.get("ID"))) {
-								try {
-									if (node.link_establisher.establish_link_s1(pac.get("ID"), sock)) {
-										node.link_timers.remove(pac.get("ID"));
-									}
-								} catch (LinkException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							} else if (pac.get("type_d").equals("08") && node.nodeIDs.contains(pac.get("ID"))) {
-								node.link_establish_socks.put(pac.get("ID"), sock);
-							} else {
-								throw new LinkException("Unexpected packet from the peer node.");
+                                        pac = Packer.unpack(str);
+					if (pac.containsKey("type") && pac.get("type").equals("LinkE") && pac.containsKey("type_d")) {
+						if (pac.get("type_d").equals("04") && node.nodeIDs.contains(pac.get("ID"))) {
+							if (node.link_establisher.establish_link_s1(pac.get("ID"), sock)) {
+								node.link_timers.remove(pac.get("ID"));
 							}
+						} else if (pac.get("type_d").equals("08") && node.nodeIDs.contains(pac.get("ID"))) {
+							node.link_establish_socks.put(pac.get("ID"), sock);
 						} else {
-							throw new LinkException("Unexpected packet from the peer node.");
+							// TODO Something wrong
 						}
-					} catch (LinkException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+
+					} else {
+						// TODO Something wrong
 					}
 				} catch (ExceptionUDT e) {
-					// TODO Auto-generated catch block
+//					e.printStackTrace();
+				} catch (NodeException e) {
 					e.printStackTrace();
-				} finally {
-					try {
-						sock.close();
-					} catch (ExceptionUDT e) {
-					}
+				} catch (PackException e) {
+					e.printStackTrace();
 				}
 			}
 		} catch (ExceptionUDT e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return;

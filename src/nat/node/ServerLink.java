@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -39,22 +39,19 @@ class ServerLink implements Runnable {
 		String tmp;
 		Map<String, String> pac;
 		try {
-			SocketUDT sock = null;
 			SocketUDT server = new SocketUDT(TypeUDT.STREAM);
+                        SocketUDT sock = null;
 			server.setBlocking(true);
 			server.bind(new InetSocketAddress(node.IP_local_server, node.Port_local_server));
-			server.listen(10);
+                        server.listen(10);
 			while (true) {
 				try {
 					arr = new byte[1024];
 					sock = server.accept();
 					sock.receive(arr);
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-					try {
-						pac = Packer.unpack(str);
-					} catch (PackException e) {
-						throw new LinkException("Unexpected packet from the server.", e);
-					}
+					pac = Packer.unpack(str);
+					sock.close();
 					tmp = null;
 					switch (pac.get("type")) {
 					case ("NodeI"):
@@ -69,31 +66,29 @@ class ServerLink implements Runnable {
 					case ("DataF"):
 						tmp = "Data";
 						break;
-					case ("RoutD"):
-						tmp = "Data";
-						break;
+                                        case ("RoutD"):
+                                                tmp ="Data";
+                                                break;
 					case ("ERR"):
 						tmp = "ERR";
 						break;
 					default:
-						throw new LinkException("Unexpected packet from the server." + pac.toString());
+						throw new NodeException("Unknown type" + pac.toString());
 					}
 					node.messages_from_server.get(tmp).add(pac);
+				} catch (PackException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				} catch (ExceptionUDT e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (LinkException e) {
+                                      
+				//	e.printStackTrace();
+				} catch (NodeException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} finally {
-					try {
-						sock.close();
-					} catch (ExceptionUDT e) {
-					}
+				//	e.printStackTrace();
 				}
 			}
 		} catch (ExceptionUDT e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

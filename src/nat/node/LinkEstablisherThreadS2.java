@@ -1,6 +1,8 @@
-package data_transferor;
+package nodetest;
 
 import java.util.Map;
+
+import com.barchart.udt.ExceptionUDT;
 
 class LinkEstablisherThreadS2 implements Runnable {
 
@@ -19,46 +21,48 @@ class LinkEstablisherThreadS2 implements Runnable {
 			while (!Thread.currentThread().isInterrupted()) {
 				// check if other Nodes try to establish links with this
 				while (!node.messages_from_server.get("Link").isEmpty()) {
+                                    try 
+                                    {
+                                        Thread.sleep(1000);
+                                    } 
+                                    catch (Exception e) 
+                                    {
+                                    
+                                    }
 					Map<String, String> pac = node.messages_from_server.get("Link").poll();
-					try {
-						if (pac.get("type").equals("LinkE") && pac.containsKey("type_d")) {
-							if (pac.get("type_d").equals("03")) {
-								try {
-									if (node.link_establisher.establish_link_s2(pac.get("ID"), pac.get("IP"),
-											Integer.parseInt(pac.get("Port")))) {
-										node.link_timers.remove(pac.get("ID"));
-									}
-								} catch (NumberFormatException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								} catch (LinkException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
+					if (pac.get("type").equals("LinkE")) {
+						if (pac.get("type_d").equals("03")) {
+							try {
+								if (node.link_establisher.establish_link_s2(pac.get("ID"), pac.get("IP"),
+										Integer.parseInt(pac.get("Port")))) {
+									node.link_timers.remove(pac.get("ID"));
 								}
-							} else if (pac.get("type_d").equals("07")) {
-								try {
-									if (node.link_establisher.establish_link_s3(pac.get("ID"))) {
-										node.link_timers.remove(pac.get("ID"));
-									}
-								} catch (LinkException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
+							} catch (ExceptionUDT e) {
+								e.printStackTrace();
+							} catch (NodeException e) {
+								e.printStackTrace();
+							} catch (PackException e) {
+								e.printStackTrace();
+							}
+						} else if (pac.get("type_d").equals("07")) {
+							try {
+								if (node.link_establisher.establish_link_s3(pac.get("ID"))) {
+									node.link_timers.remove(pac.get("ID"));
 								}
-							} else {
-								throw new LinkException("Unexpected packet from the server.");
+							} catch (ExceptionUDT e) {
+								e.printStackTrace();
 							}
 						} else {
-							throw new LinkException("Unexpected packet from the server.");
+							// TODO Something wrong
 						}
-					} catch (LinkException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					} else {
+						// TODO Something wrong
 					}
 				}
 				Thread.sleep(1000);
 			}
 		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+			e.printStackTrace();
 		}
 		return;
 	}

@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,7 +45,9 @@ public class Node {
 	protected Set<String> nodeIDs;
 	protected Map<String, String> UName_ID;
 	protected Thread node_thread;
-
+        protected Map<Integer, DataReceiver> data_receiver;
+        protected Map<Integer, Map<String, String>> data_resend;
+        
 	protected String IP_local;
 	protected Map<String, String> node_IPs;
 
@@ -71,8 +73,6 @@ public class Node {
 	protected Map<String, Queue<Map<String, String>>> messages_from_server;
 
 	protected ExecutorService data_to_send;
-	protected Map<Integer, DataReceiver> data_receiver;
-	protected Map<Integer, Map<String, String>> data_resend;
 
 	/**
 	 * @param user_name
@@ -85,6 +85,8 @@ public class Node {
 	public Node(String user_name, String server_host, int server_port)
 			throws ExceptionUDT, PackException, NodeException {
 		this.user_name = user_name;
+                this.data_receiver = new ConcurrentHashMap<>();
+                this.data_resend = new ConcurrentHashMap<>();
 		nodeIDs = ConcurrentHashMap.<String> newKeySet();
 		UName_ID = new ConcurrentHashMap<>();
 		node_IPs = new ConcurrentHashMap<>();
@@ -102,9 +104,7 @@ public class Node {
 		messages_from_server.put("ERR", new ConcurrentLinkedQueue<Map<String, String>>());
 		this.server_host = server_host;
 		this.server_port = server_port;
-		this.data_receiver = new ConcurrentHashMap<>();
-		this.data_to_send = Executors.newCachedThreadPool();
-		this.data_resend = new ConcurrentHashMap<>();
+		data_to_send = Executors.newCachedThreadPool();
 		try {
 			IP_local = getRealLocalIP();
 			System.out.println(IP_local);
@@ -216,7 +216,7 @@ public class Node {
 														// hold its result
 			Future<Boolean> result;
 			result = data_to_send.submit(new DataSender(this, ID_p, str));
-			Logger.getLogger(Node.class.getName()).log(Level.INFO, "Sending starts.");
+                        Logger.getLogger(Node.class.getName()).log(Level.CONFIG, "Sending starts.");
 			return result;
 		} else {
 			throw new IllegalArgumentException("The destination does not exist.");
@@ -245,8 +245,8 @@ public class Node {
 						}
 					}
 				}
-			} catch (SocketException e) {
-				Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, e);
+			} catch (SocketException ex) {
+				Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
 			}
 		}
 		return IFCONFIG.toString();

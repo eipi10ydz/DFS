@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -23,8 +23,8 @@ class DataSender implements Callable<Boolean> {
 	private Node node;
 	private String dest;
 	private String data;
-	private List<String> data_to_send;
-	private int cnt;
+        private List<String> data_to_send;
+        private int cnt;
 	private int No1;
 	private static AtomicInteger No = new AtomicInteger(0);
 	protected static Set<Integer> finished_list = ConcurrentHashMap.<Integer> newKeySet();
@@ -39,8 +39,8 @@ class DataSender implements Callable<Boolean> {
 		this.node = node;
 		this.dest = destination;
 		this.data = data;
-		this.data_to_send = new ArrayList<>();
-		this.cnt = 0;
+                this.data_to_send = new ArrayList<>();
+                this.cnt = 0;
 		No1 = DataSender.No.getAndAdd(1);
 	}
 
@@ -59,19 +59,14 @@ class DataSender implements Callable<Boolean> {
 		}
 		cnt = i;
 		// Ask for router information
-		while (true) {
-			try {
-				ask_router_info();
-				break;
-			} catch (NodeException e) {
-				e.printStackTrace();
-				return false;// TODO retry?
-			} catch (ExceptionUDT e) {
-				e.printStackTrace();
-				return false;
-			} catch (LinkException e) {
-				// retry
-			}
+		try {
+			pac = ask_router_info();
+		} catch (NodeException e) {
+			e.printStackTrace();
+			return false;// TODO retry?
+		} catch (ExceptionUDT e) {
+			e.printStackTrace();
+			return false;
 		}
 		pack_send(pac);
 		while (true) {
@@ -86,7 +81,7 @@ class DataSender implements Callable<Boolean> {
 		// return false;
 	}
 
-	private Map<String, String> ask_router_info() throws ExceptionUDT, NodeException, LinkException {
+	private Map<String, String> ask_router_info() throws ExceptionUDT, NodeException {
 		byte arr[] = new byte[4096];
 		String str = null;
 		Map<String, String> pac = null;
@@ -111,19 +106,14 @@ class DataSender implements Callable<Boolean> {
 			Node.empty_arr(4096, arr);
 			try {
 				pac = Packer.unpack(str);
+                                System.out.println(str);
+			//	if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.get("type").equals("RoutD")
+			//			&& pac.get("type_d").equals("01"))) {
+			//		throw new NodeException("Unexpected packet from the server.");
+			//	}
+				break;
 			} catch (PackException e) {
-				throw new LinkException("Unexpected packet from the server." + pac.toString());
 			}
-			if (!(pac.containsKey("type") && pac.containsKey("type_d"))) {
-				throw new LinkException("Unexpected packet from the server." + pac.toString());
-			}
-			if ((pac.get("type").equals("ERR") && pac.get("type_d").equals("02"))) {
-				throw new NodeException("Routing failed.");
-			}
-			if (!(pac.get("type").equals("RoutD") && pac.get("type_d").equals("01"))) {
-				throw new LinkException("Unexpected packet from the server." + pac.toString());
-			}
-			break;
 		}
 		return pac;
 	}
@@ -134,21 +124,22 @@ class DataSender implements Callable<Boolean> {
 		List<String> packets = new ArrayList<>();
 		int packet_cnt = 0;
 		String ID_p;
-		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // Â·¾¶Êı
+		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // è·¯å¾„æ•°
 		String srout = new String("Rout");
 		String scnt = new String("Cnt");
 		String shop = new String("Hop_");
 		for (int i = 1; i <= rout_cnt; i++) {
-			int routi = Integer.parseInt(pac_routd01.get(srout + i));// °üÊı
+			int routi = Integer.parseInt(pac_routd01.get(srout + i));// åŒ…æ•°
 			int routi_cnt = Integer.parseInt(pac_routd01.get(srout + i + scnt));
 			pac = new ConcurrentHashMap<>();
 			ID_p = pac_routd01.get(srout + i + shop + 1);
+                        pac.put("Len", this.data.length() + "");
 			pac.put("From", node.ID);
 			pac.put("To", this.dest);
 			pac.put("No", Integer.toString(this.No1));
 			pac.put("Cnt", Integer.toString(this.cnt));
-			pac.put("NoBeg", Integer.toString(packet_cnt)); // °üµÄÆğÊ¼±àºÅ
-			pac.put("HopCnt", pac_routd01.get(srout + i + scnt));// Ã¿¸öÂ·¾¶µÄ½ÚµãÊı
+			pac.put("NoBeg", Integer.toString(packet_cnt)); // åŒ…çš„èµ·å§‹ç¼–å·
+			pac.put("HopCnt", pac_routd01.get(srout + i + scnt));// æ¯ä¸ªè·¯å¾„çš„èŠ‚ç‚¹æ•°
 			pac.put("PackCnt", pac_routd01.get(srout + i));
 			for (int j = 1; j <= routi_cnt; j++) {
 				pac.put(shop + j, pac_routd01.get(srout + i + shop + j));
@@ -173,22 +164,10 @@ class DataSender implements Callable<Boolean> {
 			}
 			while (true) {
 				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					Thread.currentThread().interrupt();
-				}
-				try {
 					DataSender2.Sender(node, ID_p, packets);
 					break;
-				} catch (LinkException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (NodeException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				} catch (ExceptionUDT e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					// é‡å‘...
 				}
 			}
 		}

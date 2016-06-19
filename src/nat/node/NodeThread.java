@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,6 +31,14 @@ class NodeThread implements Runnable {
 	public void run() {
 		while (true) {
 			while (!node.messages_from_server.get("Node").isEmpty()) {
+                                try 
+                                {
+                                    Thread.sleep(1000);
+                                } 
+                                catch (Exception e) 
+                                {
+                                    
+                                }
 				Map<String, String> pac = node.messages_from_server.get("Node").poll();
 				if (pac.containsKey("type") && pac.get("type").equals("NodeI")) {
 					if (pac.containsKey("type_d") && pac.get("type_d").equals("02")) {
@@ -48,9 +56,13 @@ class NodeThread implements Runnable {
 				Map<String, String> pac = node.messages_from_server.get("Data").poll();
 				if (pac.get("type").equals("DataF")) {
 					DataSender.finished_list.add(Integer.parseInt(pac.get("No")));
-				} else if (pac.get("type").equals("RoutD")) {
-					node.data_resend.put(Integer.parseInt(pac.get("No")), pac);
-				} else {
+				} 
+                                else if (pac.get("type").equals("RoutD")) 
+                                {
+                                    node.data_resend.put(Integer.parseInt(pac.get("No")), pac);
+	 			} 
+                                else 
+                                {
 					// TODO Something wrong
 				}
 			}

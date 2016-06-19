@@ -162,6 +162,11 @@ class MultiServerImplementation implements Runnable
                 informSendSuccess(info, sock);
                 break;
             }
+            case "DataR" :
+            {
+                informResend(info, sock);
+                break;
+            }
         }
     }
     
@@ -301,7 +306,7 @@ class MultiServerImplementation implements Runnable
                 log("cannot connect...check failed..." + client.toString());
                 sock.close();
                 List<Client> list = this.route_table.get(client);
-                for (Iterator<Client> pointer = list.iterator(); it.hasNext();) 
+                for (Iterator<Client> pointer = list.iterator(); pointer.hasNext();) 
                 {
                     Client temp = pointer.next();
                     this.route_table.get(temp).remove(client);
@@ -483,6 +488,11 @@ class MultiServerImplementation implements Runnable
         }
     }
     
+    private void informResend(Map<String, String> info, SocketUDT sock)
+    {
+        return_route(info, sock);
+    }
+    
     private void record_info(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
         String connectivity = info.get("Connectivity");
@@ -619,7 +629,7 @@ class MultiServerImplementation implements Runnable
         double RTT, bandwidth, lostRate, weight;
         try {
             lock.lock();
-            if(info.get("RTT").trim().equals("NaN"))
+            if(info.get("lostRate").trim().equals("NaN"))
             {
                 //此处需要把RTT, bandwidth, lostRate变为默认值
                 map_edge_change(from, to);
@@ -673,7 +683,7 @@ class MultiServerImplementation implements Runnable
         }
     }
 
-    private void return_route(Map<String, String> info, SocketUDT sock) throws ExceptionUDT 
+    private void return_route(Map<String, String> info, SocketUDT sock)
     {
         List<Integer> route;
         List<Integer> judge;
@@ -689,8 +699,16 @@ class MultiServerImplementation implements Runnable
         {
             sendBack.put("type", "ERR");
             sendBack.put("type_d", "02");
-            sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
-            //发送错误包，无法连接
+            try 
+            {
+                sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
+                //发送错误包，无法连接
+            } 
+            catch (ExceptionUDT ex) 
+            {
+            //    Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
+                log("No route between two nodes...");
+            }
         } 
         //否则发送路径
         else 
@@ -739,9 +757,9 @@ class MultiServerImplementation implements Runnable
             if (route_list.size() >= 3) 
             {
                 Routcnt = 3;
-                Rout3cnt = route_list.get(2).size() - 1;
-                Rout2cnt = route_list.get(1).size() - 1;
                 Rout1cnt = route_list.get(0).size() - 1;
+                Rout2cnt = route_list.get(1).size() - 1;
+                Rout3cnt = route_list.get(2).size() - 1;
             } 
             else if (route_list.size() == 2) 
             {
@@ -764,6 +782,7 @@ class MultiServerImplementation implements Runnable
             sendBack.put("To", String.format("%05d", to));
             sendBack.put("RoutCnt", Routcnt + "");
             sendBack.put("No", info.get("No"));
+            log("" + Routcnt);
             switch (Routcnt) {
                 case 3:
                     Rout1 = (int) Math.round(cnt * 0.5);
@@ -810,12 +829,22 @@ class MultiServerImplementation implements Runnable
                     }
                     break;
                 default:
+                    sendBack = new HashMap<>();
                     sendBack.put("type", "ERR");
                     sendBack.put("type_d", "02");
                     break;
             }
             System.out.println(this.gson_toJson.toJson(sendBack));
-            sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
+            try 
+            {
+                sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
+                //发送错误包，无法连接
+            } 
+            catch (ExceptionUDT ex) 
+            {
+            //    Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
+                log("return route failed...");
+            }
         }
     }
     
