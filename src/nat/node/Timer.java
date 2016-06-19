@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 /**
  * @author wzy
  * @version 1.0
@@ -110,7 +110,7 @@ class Timer {
 	 * @return if the timer has expired
 	 */
 	public boolean isExpired() {
-		return (this.start_time + this.period) >= System.currentTimeMillis();
+		return (this.start_time + this.period) <= System.currentTimeMillis();
 	}
 
 }

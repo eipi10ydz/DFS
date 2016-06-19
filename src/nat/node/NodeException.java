@@ -1,4 +1,4 @@
-package data_transferor;
+package nodetest;
 
 public class NodeException extends Exception {
 	/**

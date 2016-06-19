@@ -7,6 +7,8 @@ package server;
 
 import com.barchart.udt.SocketUDT;
 import com.barchart.udt.TypeUDT;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -29,21 +31,29 @@ public class MainClass
     public static void main(String[] args) throws IOException {
         // TODO code application logic here
         int threadNum = 10;
-        MultiServer mt = new MultiServer(threadNum);
+//        String host = "10.0.0.4";
+        String host = "10.104.13.233";
+//        String host = "127.0.0.1";
+        int port = 23333;
+        MultiServer mt = new MultiServer(threadNum, host, port, true);
         mt.start();
 //        System.out.println(InetAddress.getLocalHost());
-/*        String local = "127.0.0.1";
-        int port1 = 6666, port2 = 23333;
+
+
+/*
+        String local = "10.104.13.233";
+        int port = 23333;
         
         SocketUDT sock1 = new SocketUDT(TypeUDT.STREAM);
-        sock1.bind(new InetSocketAddress(local, port1));
-        sock1.setRendezvous(true);
-        sock1.connect(new InetSocketAddress(local, port2));
-        if(sock1.isConnected())
-            sock1.send(" ".getBytes());
-        System.out.println(sock1.isConnected());
-        System.out.println(sock1.getRemoteInetAddress().toString() + sock1.getRemoteInetPort());
+        sock1.bind(new InetSocketAddress(local, port));
+        sock1.listen(5);
+        SocketUDT sock = sock1.accept();
+        byte [] arr = new byte[1024 * 128];
+        sock.receive(arr);
 */
+//        File f = new File("C:\\Users\\ydz\\Desktop\\23333333.txt");
+//        FileOutputStream out = new FileOutputStream(f);
+//        out.write(arr);
 /*        
         DatagramSocket ds = new DatagramSocket(6666);
         String send = "test";

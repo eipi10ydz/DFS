@@ -1,3 +1,5 @@
+package nodetest;
+
 public class PackException extends Exception{
 	/**
 	 * 
