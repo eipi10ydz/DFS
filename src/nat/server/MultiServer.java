@@ -683,11 +683,12 @@ class MultiServerImplementation implements Runnable
         }
     }
 
-    private void return_route(Map<String, String> info, SocketUDT sock)
-    {
+        private void return_route(Map<String, String> info, SocketUDT sock) {
         List<Integer> route;
         List<Integer> judge;
         List<List<Integer>> route_list = new ArrayList<>();
+        List<String> used = new ArrayList<>();//记录发送过的边
+        String pair;
         int from = Integer.parseInt(info.get("ID"));
         int to = Integer.parseInt(info.get("ID_target"));
         int cnt = Integer.parseInt(info.get("Cnt"));
@@ -695,30 +696,22 @@ class MultiServerImplementation implements Runnable
         int Routcnt;
         Map<String, String> sendBack;
         sendBack = new HashMap<>();
-        if (this.fi.res[from][to] == this.INFINITY) 
-        {
+        if (this.fi.res[from][to] == this.INFINITY) {
             sendBack.put("type", "ERR");
             sendBack.put("type_d", "02");
-            try 
-            {
+            try {
                 sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
                 //发送错误包，无法连接
-            } 
-            catch (ExceptionUDT ex) 
-            {
-            //    Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ExceptionUDT ex) {
+                //    Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
                 log("No route between two nodes...");
             }
-        } 
-        //否则发送路径
-        else 
-        {
+        } //否则发送路径
+        else {
             int[] able = new int[mapVertices];//用来存和from直连的顶点
             int count = 0;
-            for (int i = 0; i < mapVertices; i++) 
-            {
-                if (fi.weight[from][i] > 0 && fi.weight[from][i] != INFINITY) 
-                {
+            for (int i = 0; i < mapVertices; i++) {
+                if (fi.weight[from][i] > 0 && fi.weight[from][i] != INFINITY) {
                     able[count++] = i;//统计与from直接相连的node数
                 }
             }
@@ -726,17 +719,13 @@ class MultiServerImplementation implements Runnable
             double min;
             int temp = (int) INFINITY;//循环时每次选出的顶点编号
             int chosen = (int) INFINITY;//循环时每次选出的顶点在able数组中的编号 
-            for (int i = 0; i < count; i++) 
-            {
+            for (int i = 0; i < count; i++) {
                 route = new ArrayList<>();
                 judge = new ArrayList<>();
                 min = INFINITY;
-                for (int j = 0; j < count; j++) 
-                {
-                    if (a[j] == 0) 
-                    {
-                        if (fi.weight[from][able[j]] + fi.res[able[j]][to] < min) 
-                        {
+                for (int j = 0; j < count; j++) {
+                    if (a[j] == 0) {
+                        if (fi.weight[from][able[j]] + fi.res[able[j]][to] < min) {
                             min = fi.weight[from][able[j]] + fi.res[able[j]][to];
                             temp = able[j];
                             chosen = j;
@@ -747,33 +736,39 @@ class MultiServerImplementation implements Runnable
                 route.add(from);
                 this.fi.output_toList(temp, to, route);
                 this.fi.output_toList(temp, to, judge);
-                if (!judge.contains(from)) 
-                {
-                    route_list.add(route);
-                }//如果中间又经过了from中转则不要
+                if (!judge.contains(from)) {
+                    boolean repeated = false;
+                    for (int m = 0; m < route.size() - 1; m++) {
+                        pair = route.get(m) + " " + route.get(m + 1);
+                        if (used.contains(pair)) {
+                            repeated = true;
+                            break;
+                        }
+                    }
+                    if (!repeated) {
+                        route_list.add(route);
+                        for (int m = 0; m < route.size() - 1; m++) {
+                            pair = route.get(m) + " " + route.get(m + 1);
+                            used.add(pair);
+                        }
+                    }
+                }//如果中间经过from中转,或者路径中的边在之前用过了，则不要
             }//得到排好序的route_list,最短的在最前面,以此类推
             //Random ran = new Random();
             //int r = ran.nextInt(100);
-            if (route_list.size() >= 3) 
-            {
+            if (route_list.size() >= 3) {
                 Routcnt = 3;
                 Rout1cnt = route_list.get(0).size() - 1;
                 Rout2cnt = route_list.get(1).size() - 1;
                 Rout3cnt = route_list.get(2).size() - 1;
-            } 
-            else if (route_list.size() == 2) 
-            {
+            } else if (route_list.size() == 2) {
                 Routcnt = 2;
                 Rout1cnt = route_list.get(0).size() - 1;
                 Rout2cnt = route_list.get(1).size() - 1;
-            }
-            else if (route_list.size() == 1) 
-            {
+            } else if (route_list.size() == 1) {
                 Routcnt = 1;
                 Rout1cnt = route_list.get(0).size() - 1;
-            } 
-            else 
-            {
+            } else {
                 Routcnt = 0;
             }
             sendBack.put("type", "RoutD");
@@ -835,18 +830,16 @@ class MultiServerImplementation implements Runnable
                     break;
             }
             System.out.println(this.gson_toJson.toJson(sendBack));
-            try 
-            {
+            try {
                 sock.send(this.gson_toJson.toJson(sendBack).getBytes(Charset.forName("ISO-8859-1")));
                 //发送错误包，无法连接
-            } 
-            catch (ExceptionUDT ex) 
-            {
-            //    Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ExceptionUDT ex) {
+                //    Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
                 log("return route failed...");
             }
         }
     }
+
     
     @Override
     public void run()
@@ -930,22 +923,29 @@ class Floyd_implementation {
     double INF = 66666666;
     public int[][] path_temp;
 
-    public Floyd_implementation(int size) {
+   public Floyd_implementation(int size) {
         this.res = new double[size][size];
         this.weight = new double[size][size];
         this.path_temp = new int[size][size];
         for (int i = 0; i < size; ++i) {
-            for (int j = 0; j < size; ++j) {
-                this.res[i][j] = this.weight[i][j] = INF;
+            for (int j = 0; j < size; j++) {
+                if (i != j) {
+                    this.res[i][j] = this.weight[i][j] = INF;
+                } else {
+                    this.res[i][j] = this.weight[i][j] = 0;
+                }
             }
         }
-
     }
 
     public void res_init() {
         for (int i = 0; i < res.length; ++i) {
             for (int j = 0; j < res.length; ++j) {
-                res[i][j] = weight[i][j];
+                if (i != j) {
+                    this.res[i][j] = this.weight[i][j];
+                } else {
+                    this.res[i][j] = 0;
+                }
             }
         }
     }
@@ -953,7 +953,11 @@ class Floyd_implementation {
     public void weight_init(double[][] w) {
         for (int i = 0; i < weight.length; ++i) {
             for (int j = 0; j < weight.length; ++j) {
-                weight[i][j] = w[i][j];
+                if (i != j) {
+                    this.weight[i][j] = w[i][j];
+                } else {
+                    this.weight[i][j] = 0;
+                }
             }
         }
     }
