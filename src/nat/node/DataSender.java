@@ -60,7 +60,12 @@ class DataSender implements Callable<Boolean> {
 		cnt = i;
 		// Ask for router information
 		try {
-			pac = ask_router_info();
+			while(true)
+                        {
+                            pac = ask_router_info();
+                            if(pac != null)
+                                break;
+                        }
 		} catch (NodeException e) {
 			e.printStackTrace();
 			return false;// TODO retry?
@@ -70,13 +75,17 @@ class DataSender implements Callable<Boolean> {
 		}
 		pack_send(pac);
 		while (true) {
-			if (finished_list.contains(No1)) {
+                    	if (finished_list.contains(No1)) {
 				node.data_resend.remove(No1);
+                                System.out.println("send " + this.No1 + " package success...");
 				return true;
 			}
 			pac = node.data_resend.remove(No1);
 			if (pac != null)
+                        {
 				pack_send(pac);
+                                System.out.println("resend " + data_to_send.size() + " packages...");
+                        }
 		}
 		// return false;
 	}
@@ -85,10 +94,19 @@ class DataSender implements Callable<Boolean> {
 		byte arr[] = new byte[4096];
 		String str = null;
 		Map<String, String> pac = null;
-		SocketUDT server = new SocketUDT(TypeUDT.STREAM);
-		server.setBlocking(true);
-		server.connect(new InetSocketAddress(node.server_host, node.server_port));
-		pac = new ConcurrentHashMap<>();
+                SocketUDT server = null;
+                try
+                {
+                    server = new SocketUDT(TypeUDT.STREAM);
+                    server.setBlocking(true);
+                    server.connect(new InetSocketAddress(node.server_host, node.server_port));
+                }
+                catch(ExceptionUDT e)
+                {
+                    System.out.println("cannot connect to server...cannot get route info...");
+                    return null;
+                }
+                pac = new ConcurrentHashMap<>();
 		pac.put("ID", node.ID);
 		pac.put("ID_target", this.dest);
 		pac.put("No", Integer.toString(this.No1));
@@ -164,8 +182,8 @@ class DataSender implements Callable<Boolean> {
 			}
 			while (true) {
 				try {
-					DataSender2.Sender(node, ID_p, packets);
-					break;
+                                    DataSender2.Sender(node, ID_p, packets);
+                                    break;
 				} catch (ExceptionUDT e) {
 					// 重发...
 				}

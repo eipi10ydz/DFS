@@ -249,8 +249,7 @@ public class Packer {
 		 							throw new PackException("包的结构不对"); 
 		 						 }
 		 					 }
-                                                         System.out.println(gson.toJson(pac));
-		 					 if(pac.size() != (Cnt + 8)){
+                                                         if(pac.size() != (Cnt + 8)){
 		 						 throw new PackException("包结构不对");
 		 					 }
 		 				}

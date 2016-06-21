@@ -17,20 +17,12 @@ class LinkEstablisherThreadS2 implements Runnable {
 
 	@Override
 	public void run() {
-		try {
 			while (!Thread.currentThread().isInterrupted()) {
+                        try {
 				// check if other Nodes try to establish links with this
 				while (!node.messages_from_server.get("Link").isEmpty()) {
-                                    try 
-                                    {
-                                        Thread.sleep(1000);
-                                    } 
-                                    catch (Exception e) 
-                                    {
-                                    
-                                    }
-					Map<String, String> pac = node.messages_from_server.get("Link").poll();
-					if (pac.get("type").equals("LinkE")) {
+                                  	Map<String, String> pac = node.messages_from_server.get("Link").poll();
+                                        if (pac.get("type").equals("LinkE")) {
 						if (pac.get("type_d").equals("03")) {
 							try {
 								if (node.link_establisher.establish_link_s2(pac.get("ID"), pac.get("IP"),
@@ -61,10 +53,10 @@ class LinkEstablisherThreadS2 implements Runnable {
 				}
 				Thread.sleep(1000);
 			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		return;
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    } 
 	}
 
 }

@@ -36,15 +36,7 @@ class LinkConnectivityChecker implements Runnable {
 		establish_links();
 		while (!Thread.currentThread().isInterrupted()) {
 			// check link timers
-                        try 
-                        {
-                            Thread.sleep(1000);
-                        } 
-                        catch (Exception e) 
-                        {
-                             
-                        }
-			node.link_timers.forEach((nodeID, timer) -> {
+                        node.link_timers.forEach((nodeID, timer) -> {
 				if (!node.nodeIDs.contains(nodeID)) {// the peer node has
 														// dropped
 					node.link_timers.remove(nodeID);
@@ -123,7 +115,6 @@ class LinkConnectivityChecker implements Runnable {
 				e.printStackTrace();
 			}
 		});
-		return;
 	}
 
 	/**
@@ -137,7 +128,6 @@ class LinkConnectivityChecker implements Runnable {
 		Timer timer = new Timer(10000, 3600000);
 		timer.start();
 		node.link_timers.put(nodeID, timer);
-		return;
 	}
 
 }

@@ -394,8 +394,9 @@ class MultiServerImplementation implements Runnable
             sockTo.bind(new InetSocketAddress(host, port));
             sockTo.connect(new InetSocketAddress(client_to.IP_maintain, Integer.parseInt(client_to.port_maintain)));
 //            SocketUDT sockTo = client_to.link_maintain;
+            System.out.println(gson_toJson.toJson(infoSend));
             sockTo.send(gson_toJson.toJson(infoSend).getBytes(Charset.forName("ISO-8859-1")));
-        } 
+        }
         catch (ExceptionUDT ex)
         {
             log(ID_from + " connect to " + destination + " failed...");

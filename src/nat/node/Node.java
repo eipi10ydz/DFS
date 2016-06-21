@@ -135,7 +135,7 @@ public class Node {
 		Node.empty_arr(str.length(), arr);
 		pac = Packer.unpack(str);
 		ID = pac.get("ID");
-		pac = new ConcurrentHashMap<String, String>();
+		pac = new ConcurrentHashMap<>();
 		pac.put("UName", this.user_name);
 		pac.put("LIP", this.IP_local);
 		try {
@@ -149,9 +149,9 @@ public class Node {
 		str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 		pac = Packer.Check_table(str);
 		int cnt = Integer.parseInt(pac.get("cnt"));
-		String s1 = new String("UName_");
-		String s3 = new String("LIP_");
-		String s2 = new String("ID_");
+		String s1 = "UName_";
+		String s3 = "LIP_";
+		String s2 = "ID_";
 		for (int i = 1; i <= cnt; i++) {
 			nodeIDs.add(pac.get(s2 + i));
 			UName_ID.put(pac.get(s1 + i), pac.get(s2 + i));

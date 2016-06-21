@@ -61,6 +61,8 @@ public class NodeLink implements Runnable
         byte [] recv = new byte[4096];
         byte[] arr;
         String str;
+        String From = null, To = null, No = null;
+        int packCntOriginal = 0;
         List<String> packageSend = null;
         try
         {
@@ -79,6 +81,7 @@ public class NodeLink implements Runnable
                     Logger.getLogger(NodeLink.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 str = new String(recv, Charset.forName("ISO-8859-1")).trim();
+//                System.out.println(str);
                 try
                 {
                     Node.empty_arr(str.length(), recv);
@@ -88,22 +91,24 @@ public class NodeLink implements Runnable
                         return;
                     int pack_cnt = Integer.parseInt(pac.get("PackCnt").trim());
                     arr = new byte[pack_cnt * 70 * 1024];
-                    String From = pac.get("From");
-                    String To = pac.get("To");
-                    String No = pac.get("No");
+                    From = pac.get("From");
+                    To = pac.get("To");
+                    No = pac.get("No");
                     int Len = Integer.parseInt(pac.get("Len")); 
-                    int packCntOriginal = Integer.parseInt(pac.get("Cnt").trim());
-                    int temp = 0, packTemp = 0;
-                    Timer timer = new Timer(3000);
+                    packCntOriginal = Integer.parseInt(pac.get("Cnt").trim());
+                    int temp = 0, tempRead = 0;
                     try 
                     {
                         while(temp < Len)
                         {
-                            in.read(arr, temp, 16 * 1024);
-                            temp += 16 * 1024;
+                            tempRead = in.read(arr, temp, 64 * 1024);
+                            if(tempRead < 64 * 1024)
+                                temp += tempRead;
+                            else
+                                temp += 64 * 1024;
                             try 
                             {
-                                Thread.sleep(500);
+                                Thread.sleep(700);
                             } 
                             catch (Exception e) 
                             {
@@ -127,16 +132,19 @@ public class NodeLink implements Runnable
                             sock = new SocketUDT(TypeUDT.STREAM);
                             sock.connect(new InetSocketAddress(node.server_host, node.server_port));
                             sock.send(Packer.pack("DataR", info).getBytes(Charset.forName("ISO-8859-1")));
-                        } 
+                        }
                         catch (ExceptionUDT | PackException ex) 
                         {
-                            Logger.getLogger(DataReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                           //Logger.getLogger(DataReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                            System.out.println("failed to connect server...cannot ask server to help resend...");
                         }
                         return;
-                    } 
+                    }
                     catch (IOException ex) 
                     {
                         Logger.getLogger(NodeLink.class.getName()).log(Level.SEVERE, null, ex);
+                        System.out.println("Stream problems...");
+                        return;
                     }                            
                     System.out.println(temp);
                     int beginNo = Integer.parseInt(pac.get("NoBeg").trim());
@@ -163,7 +171,8 @@ public class NodeLink implements Runnable
                         } 
                         catch (ExceptionUDT | PackException ex) 
                         {
-                            Logger.getLogger(DataReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                            //Logger.getLogger(DataReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                            System.out.println("failed to connect server...cannot ask server to help resend...");
                         }
                         return;
                     }
@@ -172,7 +181,7 @@ public class NodeLink implements Runnable
                     if(Integer.parseInt(pac.get("HopCnt")) == 1)
                     {
                         //此处为终点节点
-                        System.out.println("终点...");
+                        System.out.println("over...");
                         if((!node.data_receiver.containsKey(Integer.parseInt(No))) || node.data_receiver.get(Integer.parseInt(No)) == null)
                         {
                             DataReceiver tempDR = new DataReceiver(From, packCntOriginal, Integer.parseInt(No), this.node);
@@ -182,10 +191,10 @@ public class NodeLink implements Runnable
                         }
                         for(int i = 0; i < pack_cnt; ++i)
                         {
+                            System.out.println(pack[i]);
                             pac = Packer.unpack(pack[i]);
                             node.data_receiver.get(Integer.parseInt(No)).pack.put(Integer.parseInt(pac.get("No").trim()), pac.get("Content").trim());
                         }
-                        //xq method调用
                         Map<String, String> informServerMap = new HashMap<>();
                         informServerMap.put("type", "DataF");
                         informServerMap.put("From", From);
@@ -208,11 +217,12 @@ public class NodeLink implements Runnable
                             {
                                 sockInform.close();
                             } 
-                            catch (NullPointerException e) 
+                            catch (NullPointerException | ExceptionUDT e) 
                             {
                                 System.out.println("sockInform hava been closed...");
                             }
                         }
+                        return;
                     }
                     else
                     {       
@@ -223,12 +233,21 @@ public class NodeLink implements Runnable
                         sendNext.put("No", No);
                         sendNext.put("Cnt", packCntOriginal + "");
                         sendNext.put("NoBeg", beginNo + "");
+                        sendNext.put("Len", Len + "");
                         sendNext.put("HopCnt", "" + (nodeCnt - 1));
                         sendNext.put("PackCnt", pack_cnt + "");
                         for (int i = 1; i < nodeCnt; ++i)
                             sendNext.put("Hop_" + i, path.get(i));
                         packageSend = new ArrayList<>();
-                        packageSend.add(Packer.pack("RoutD", "02", sendNext));
+                        try
+                        {
+                            packageSend.add(Packer.pack("RoutD", "02", sendNext));
+                        }
+                        catch (PackException e) 
+                        {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
 //                        for (int i = 0; i < pack_cnt; ++i)
 //                            packageSend.add(new String(arr[i], Charset.forName("ISO-8859-1")).trim());
                         for(int i = 0; i < pack_cnt; ++i)
@@ -236,17 +255,35 @@ public class NodeLink implements Runnable
                             packageSend.add(pack[i]);
                         }
                         DataSender2.Sender(this.node, this.ID_p, packageSend);
+                        return;
                     }
                 }
                 catch (NullPointerException e)
                 {
                     //由line77触发
 //                    System.out.println("not for transfer...");
-                }
-                catch (PackException e) 
+                } 
+                catch (PackException ex) 
                 {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    //路由包错误或者数据包错误，需要重发
+                    System.out.println("not complete...");
+                    Map<String, String> info = new HashMap<>();
+                    info.put("ID", From);
+                    info.put("ID_target", To);
+                    info.put("No", No);
+                    info.put("Cnt", packCntOriginal + "");
+                    SocketUDT sock;
+                    try 
+                    {
+                        sock = new SocketUDT(TypeUDT.STREAM);
+                        sock.connect(new InetSocketAddress(node.server_host, node.server_port));
+                        sock.send(Packer.pack("DataR", info).getBytes(Charset.forName("ISO-8859-1")));
+                    } 
+                    catch (ExceptionUDT | PackException ex1) 
+                    {
+                        //Logger.getLogger(DataReceiver.class.getName()).log(Level.SEVERE, null, ex);
+                        System.out.println("failed to connect server...cannot ask server to help resend...");
+                    }
                 }
             }
         }            
@@ -260,7 +297,7 @@ public class NodeLink implements Runnable
                 {
                     Thread.sleep(1000);
                     DataSender2.Sender(this.node, this.ID_p, packageSend);
-                    break;
+                    return;
                 } 
                 catch (InterruptedException | ExceptionUDT ex) 
                 {
@@ -274,12 +311,13 @@ public class NodeLink implements Runnable
             {
                 socket.close();
             } 
-            catch (ExceptionUDT e) 
+            catch (ExceptionUDT | NullPointerException e) 
             {
                 // TODO Auto-generated catch block
                 //socket已关闭...
                 e.printStackTrace();
             }
+            return;
         }
     }
 }

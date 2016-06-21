@@ -19,10 +19,18 @@ public class DataSender2 {
 		SocketUDT sock = null;
                 NetOutputStreamUDT out = null;
             try {
-                System.out.println("create connect");
                 sock = node.link_establisher.establish_link_m(ID_p); //建立连接
+                while (true)
+                {                    
+                    if(sock == null)
+                    {
+                        sock = node.link_establisher.establish_link_m(ID_p);
+                    }
+                    else
+                        break;
+                }
                 out = new NetOutputStreamUDT(sock);
-            } catch (NodeException | ExceptionUDT | PackException ex) 
+            } catch (NodeException | PackException ex) 
             {
                 //建立连接的锅
                 Logger.getLogger(DataSender2.class.getName()).log(Level.SEVERE, null, ex);

@@ -50,7 +50,7 @@ class ServerLink implements Runnable {
 					sock = server.accept();
 					sock.receive(arr);
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
-					pac = Packer.unpack(str);
+                                        pac = Packer.unpack(str);
 					sock.close();
 					tmp = null;
 					switch (pac.get("type")) {
@@ -62,7 +62,7 @@ class ServerLink implements Runnable {
 					case ("LinkE"):
 					case ("LinkC"):
 						tmp = "Link";
-						break;
+                                                break;
 					case ("DataF"):
 						tmp = "Data";
 						break;
@@ -72,6 +72,8 @@ class ServerLink implements Runnable {
 					case ("ERR"):
 						tmp = "ERR";
 						break;
+                                        case ("HEARTBEAT"):
+                                                break;
 					default:
 						throw new NodeException("Unknown type" + pac.toString());
 					}
@@ -82,11 +84,14 @@ class ServerLink implements Runnable {
 				} catch (ExceptionUDT e) {
 					// TODO Auto-generated catch block
                                       
-				//	e.printStackTrace();
+					e.printStackTrace();
 				} catch (NodeException e) {
 					// TODO Auto-generated catch block
-				//	e.printStackTrace();
-				}
+					e.printStackTrace();
+				}catch (NullPointerException e)
+                                {
+                                    //
+                                }
 			}
 		} catch (ExceptionUDT e) {
 			e.printStackTrace();

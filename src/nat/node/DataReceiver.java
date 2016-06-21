@@ -41,7 +41,7 @@ public class DataReceiver implements Runnable
         this.No = No;
         this.res = "";
         this.pack = new ConcurrentHashMap<>();
-        this.timer = new Timer(180000); //3分钟?
+        this.timer = new Timer(60000); //1分钟?
     }
     
     /**
