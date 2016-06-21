@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import jdk.nashorn.internal.parser.TokenType;
 
 /**
@@ -152,7 +154,12 @@ public class NodeLink implements Runnable
                     for(int i = 2; i <= nodeCnt; ++i)
                         path.add(pac.get("Hop_" + i).trim());
                     String totalStr = new String(arr, Charset.forName("ISO-8859-1")).trim();
-                    String pack[] = totalStr.split("}");
+//                    String pack[] = totalStr.split("}");
+                    Matcher m = Pattern.compile("\\{\"No\":\"\\d{1,3}\",\"Content\":\"\\S+?\",\"type\":\"Data\"}").matcher(totalStr);
+                    List<String> split = new ArrayList<>();
+                    while(m.find())
+                        split.add(m.group());
+                    String [] pack = split.toArray(new String[split.size()]);
                     System.out.println(pack_cnt + "\n" + pack.length);
                     if(pack.length < pack_cnt)
                     {
@@ -176,8 +183,6 @@ public class NodeLink implements Runnable
                         }
                         return;
                     }
-                    for(int i = 0; i < pack_cnt; ++i)
-                        pack[i] = pack[i] + "}";
                     if(Integer.parseInt(pac.get("HopCnt")) == 1)
                     {
                         //此处为终点节点
