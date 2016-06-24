@@ -139,20 +139,57 @@ class DataSender implements Callable<Boolean> {
 	private Boolean pack_send(Map<String, String> pac_routd01) {
 		String str = null;
 		Map<String, String> pac = null;
-		List<String> packets = new ArrayList<>();
+		List<String> packets = null;
 		int packet_cnt = 0;
 		String ID_p;
 		int rout_cnt = Integer.parseInt(pac_routd01.get("RoutCnt")); // 路径数
-		String srout = new String("Rout");
-		String scnt = new String("Cnt");
-		String shop = new String("Hop_");
+		String srout = "Rout";
+		String scnt = "Cnt";
+		String shop = "Hop_";
+                int tempPac = 0;
 		for (int i = 1; i <= rout_cnt; i++) {
+                        packets = new ArrayList<>();
 			int routi = Integer.parseInt(pac_routd01.get(srout + i));// 包数
 			int routi_cnt = Integer.parseInt(pac_routd01.get(srout + i + scnt));
 			pac = new ConcurrentHashMap<>();
 			ID_p = pac_routd01.get(srout + i + shop + 1);
-                        pac.put("Len", this.data.length() + "");
-			pac.put("From", node.ID);
+                        if(rout_cnt == 1)
+                            pac.put("Len", this.data.length() + "");
+//                        if(this.data_to_send.size() <= 10)
+//                            pac.put("Len", (this.data.length() + this.data_to_send.size() * 37) + "");
+//                        else
+//                            pac.put("Len", (this.data.length() + 370 + (this.data_to_send.size() - 10) * 38) + "");
+                        else if(i < rout_cnt)
+                            pac.put("Len", routi * 64 * 1024 + "");
+                        else
+                            pac.put("Len", (this.data.length() - (this.data_to_send.size() - 1) * 64 * 1024 + (routi - 1) * 64 * 1024) + "");
+/*                        else if(i < rout_cnt)
+                        {
+                            if(tempPac <= 10)
+                            {
+                                if((tempPac + routi) <= 10)
+                                    pac.put("Len", 65573 * routi + "");
+                                else if((tempPac + routi) > 10)
+                                    pac.put("Len", (65574 * (tempPac + routi - 10) + 65573 * (10 - tempPac)) + "");
+                            }
+                            else
+                            {
+                                pac.put("Len", 65574 * routi + "");
+                            }
+                            tempPac += routi;
+                        }
+                        else
+                        {
+                            if(tempPac <= 10)
+                            {
+                                pac.put("Len", str)
+                            }
+                            else
+                            {
+                                pac.put("Len", 65574 * routi + "");
+                            }
+                        }*/
+                        pac.put("From", node.ID);
 			pac.put("To", this.dest);
 			pac.put("No", Integer.toString(this.No1));
 			pac.put("Cnt", Integer.toString(this.cnt));
@@ -183,6 +220,7 @@ class DataSender implements Callable<Boolean> {
 			while (true) {
 				try {
                                     DataSender2.Sender(node, ID_p, packets);
+                                    System.out.println("send route " + i + " packages...");
                                     break;
 				} catch (ExceptionUDT e) {
 					// 重发...

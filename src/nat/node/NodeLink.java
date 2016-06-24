@@ -83,12 +83,11 @@ public class NodeLink implements Runnable
                     Logger.getLogger(NodeLink.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 str = new String(recv, Charset.forName("ISO-8859-1")).trim();
-//                System.out.println(str);
                 try
                 {
                     Node.empty_arr(str.length(), recv);
                     pac = Packer.unpack(str);
-//                    System.out.println("NodeLink:" + str);
+                    System.out.println("NodeLink:" + str);
                     if(pac.get("type").trim().equals("HEARTBEAT"))
                         return;
                     int pack_cnt = Integer.parseInt(pac.get("PackCnt").trim());
@@ -97,6 +96,7 @@ public class NodeLink implements Runnable
                     To = pac.get("To");
                     No = pac.get("No");
                     int Len = Integer.parseInt(pac.get("Len")); 
+//                    System.out.println("Received Len:" + Len);
                     packCntOriginal = Integer.parseInt(pac.get("Cnt").trim());
                     int temp = 0, tempRead = 0;
                     try 
@@ -148,10 +148,10 @@ public class NodeLink implements Runnable
                         System.out.println("Stream problems...");
                         return;
                     }                            
-                    System.out.println(temp);
+//                    System.out.println(temp);
                     int beginNo = Integer.parseInt(pac.get("NoBeg").trim());
                     int nodeCnt = Integer.parseInt(pac.get("HopCnt").trim());
-                    for(int i = 2; i <= nodeCnt; ++i)
+                    for(int i = 1; i <= nodeCnt; ++i)
                         path.add(pac.get("Hop_" + i).trim());
                     String totalStr = new String(arr, Charset.forName("ISO-8859-1")).trim();
 //                    String pack[] = totalStr.split("}");
@@ -183,7 +183,7 @@ public class NodeLink implements Runnable
                         }
                         return;
                     }
-                    if(Integer.parseInt(pac.get("HopCnt")) == 1)
+                    if(nodeCnt == 1)
                     {
                         //此处为终点节点
                         System.out.println("over...");
@@ -196,9 +196,10 @@ public class NodeLink implements Runnable
                         }
                         for(int i = 0; i < pack_cnt; ++i)
                         {
-                            System.out.println(pack[i]);
+//                            System.out.println(pack[i]);
                             pac = Packer.unpack(pack[i]);
                             node.data_receiver.get(Integer.parseInt(No)).pack.put(Integer.parseInt(pac.get("No").trim()), pac.get("Content").trim());
+                            System.out.println("pack num:" + Integer.parseInt(pac.get("No").trim()));
                         }
                         Map<String, String> informServerMap = new HashMap<>();
                         informServerMap.put("type", "DataF");
@@ -246,7 +247,9 @@ public class NodeLink implements Runnable
                         packageSend = new ArrayList<>();
                         try
                         {
-                            packageSend.add(Packer.pack("RoutD", "02", sendNext));
+                            String tempStr = Packer.pack("RoutD", "02", sendNext);
+                            System.out.println("going to send:" + tempStr);
+                            packageSend.add(tempStr);
                         }
                         catch (PackException e) 
                         {
@@ -259,7 +262,7 @@ public class NodeLink implements Runnable
                         {
                             packageSend.add(pack[i]);
                         }
-                        DataSender2.Sender(this.node, this.ID_p, packageSend);
+                        DataSender2.Sender(this.node, path.get(1), packageSend);
                         return;
                     }
                 }
@@ -301,7 +304,7 @@ public class NodeLink implements Runnable
                 try 
                 {
                     Thread.sleep(1000);
-                    DataSender2.Sender(this.node, this.ID_p, packageSend);
+                    DataSender2.Sender(this.node, path.get(1), packageSend);
                     return;
                 } 
                 catch (InterruptedException | ExceptionUDT ex) 

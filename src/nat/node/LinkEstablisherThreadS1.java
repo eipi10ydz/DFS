@@ -42,7 +42,7 @@ class LinkEstablisherThreadS1 implements Runnable {
 			accepter.bind(new InetSocketAddress(node.IP_local, 2333));
                         accepter.listen(5);
                         while (!Thread.currentThread().isInterrupted()) {
-                            System.out.println("bind local : " + node.IP_local + ":" + 2333);
+//                            System.out.println("bind local : " + node.IP_local + ":" + 2333);
                             arr = new byte[1024];
                             SocketUDT sock = accepter.accept();
                             sock.receive(arr);// receive packet LinkE04

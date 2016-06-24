@@ -85,6 +85,7 @@ public class DataReceiver implements Runnable
             //得到完整内容
             oin = new ObjectInputStream(new ByteArrayInputStream(res.getBytes(Charset.forName("ISO-8859-1"))));
             obj = oin.readObject();
+            System.out.println(obj.toString().length());
         } 
         catch (IOException ex) 
         {
@@ -95,7 +96,6 @@ public class DataReceiver implements Runnable
         {
             Logger.getLogger(DataReceiver.class.getName()).log(Level.SEVERE, null, ex);
         }
-        System.out.println(obj.toString().length());
         //ReqHandler.handle(obj);
     }
 
