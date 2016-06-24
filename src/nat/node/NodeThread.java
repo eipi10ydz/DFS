@@ -49,8 +49,9 @@ class NodeThread implements Runnable {
 				if (pac.get("type").equals("DataF")) {
 					DataSender.finished_list.add(Integer.parseInt(pac.get("No")));
 				}
-                                else if (pac.get("type").equals("RoutD")) 
+                                else if (pac.get("type").equals("RoutD"))
                                 {
+                                    System.out.println("get data...");
                                     System.out.println("data resend...");
                                     node.data_resend.put(Integer.parseInt(pac.get("No")), pac);
 	 			}

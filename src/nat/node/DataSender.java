@@ -76,15 +76,13 @@ class DataSender implements Callable<Boolean> {
 		pack_send(pac);
 		while (true) {
                     	if (finished_list.contains(No1)) {
-				node.data_resend.remove(No1);
-                                System.out.println("send " + this.No1 + " package success...");
-				return true;
+                            node.data_resend.remove(No1);
+                            return true;
 			}
 			pac = node.data_resend.remove(No1);
 			if (pac != null)
                         {
-				pack_send(pac);
-                                System.out.println("resend " + data_to_send.size() + " packages...");
+                            pack_send(pac);
                         }
 		}
 		// return false;

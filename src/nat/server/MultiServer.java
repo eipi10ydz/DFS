@@ -491,7 +491,21 @@ class MultiServerImplementation implements Runnable
     
     private void informResend(Map<String, String> info, SocketUDT sock)
     {
-        return_route(info, sock);
+        SocketUDT sockInform = null;
+        try 
+        {
+            sockInform = new SocketUDT(TypeUDT.STREAM);
+            Client client_to = find_client(info.get("ID"));
+            sockInform.bind(new InetSocketAddress(this.host, this.port));
+            sockInform.connect(new InetSocketAddress(client_to.IP_maintain, parseInt(client_to.port_maintain)));
+        } 
+        catch (ExceptionUDT | NullPointerException ex) 
+        {
+        //    Logger.getLogger(MultiServerImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("failed to inform resend...");
+            return;
+        }
+        return_route(info, sockInform);
     }
     
     private void record_info(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
@@ -684,7 +698,8 @@ class MultiServerImplementation implements Runnable
         }
     }
 
-        private void return_route(Map<String, String> info, SocketUDT sock) {
+    private void return_route(Map<String, String> info, SocketUDT sock) 
+    {
         List<Integer> route;
         List<Integer> judge;
         List<List<Integer>> route_list = new ArrayList<>();
