@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 /**
  *
  * @author 杨德中, 苏潇
+ * @version 0.0.1
  */
 
 public class MultiServer
@@ -37,6 +38,12 @@ public class MultiServer
     private final String host;
     private final int port;
     private final boolean debug;
+    /**
+     * @param threadNum the number of threads
+     * @param host  the IP Address of the server
+     * @param port  the port of the server
+     * @param debug if debug is true, the console will output debug info
+     */
     public MultiServer(int threadNum, String host, int port, boolean debug)
     {
         this.threadNum = threadNum;
@@ -45,6 +52,10 @@ public class MultiServer
         this.debug = debug;
     }
     
+    /**
+     * this method is used to start the server
+     * @throws IOException caused by UDT sockets' initialization 
+     */
     public void start() throws IOException
     {
         MultiServerImplementation mt = new MultiServerImplementation(this.host, this.port, this.debug);
@@ -66,7 +77,11 @@ public class MultiServer
         });
     }
 }
-
+/**
+ * implementation of server
+ * @author 杨德中, 苏潇
+ * @version 0.0.1
+ */
 class MultiServerImplementation implements Runnable
 {
     private final Map<Client, List<Client>> route_table = new HashMap<>();
@@ -105,7 +120,11 @@ class MultiServerImplementation implements Runnable
         early = new Date();
         log("Waiting for connection...");
     }
-    
+    /**
+     * method for dualing with different requests
+     * @param sock socket established by nodes
+     * @throws ExceptionUDT 
+     */
     private void dual_with(SocketUDT sock) throws ExceptionUDT
     {
         byte arrRecv[] = new byte[1024];
@@ -169,7 +188,12 @@ class MultiServerImplementation implements Runnable
             }
         }
     }
-    
+    /**
+     * method for nodes to register
+     * @param info package from nodes
+     * @param sock socket established by nodes
+     * @throws ExceptionUDT 
+     */
     private void register(Map<String, String> info, SocketUDT sock) throws ExceptionUDT
     {
         Client client;
@@ -232,6 +256,11 @@ class MultiServerImplementation implements Runnable
         log(new String(gson_toJson.toJson(infoSend).getBytes(Charset.forName("ISO-8859-1"))));
     }
     //两个重载的成员函数，用于两种方式查找client
+    /**
+     * method for finding node in the route table using ID
+     * @param destination ID of the node to be found
+     * @return 
+     */
     private Client find_client(String destination)
     {
         Client client_to = null;
@@ -247,7 +276,12 @@ class MultiServerImplementation implements Runnable
         }
         return found ? client_to : null;
     }
-    
+    /**
+     * method for finding node in the route table using IP address and port
+     * @param IP_from IP of the node to be found
+     * @param port_from port of the node to be found
+     * @return 
+     */
     private Client find_client(String IP_from, String port_from)
     {
         Client client_from = null;
@@ -263,7 +297,12 @@ class MultiServerImplementation implements Runnable
         }
         return found ? client_from : null;
     }
-    
+    /**
+     * method for checking whether a node is online, if not, delete the node from node table
+     * @throws InterruptedException
+     * @throws ExceptionUDT
+     * @throws IOException 
+     */
     private void check_online() throws InterruptedException, ExceptionUDT, IOException
     {
         Date later;
@@ -278,7 +317,10 @@ class MultiServerImplementation implements Runnable
         }
     }
     //没加锁，可能会出问题
-
+    /**
+     * implementation for private void check_online() throws InterruptedException, ExceptionUDT, IOException
+     * @throws ExceptionUDT 
+     */
     private void check_implementation() throws ExceptionUDT
     {
         Client client;
@@ -336,7 +378,10 @@ class MultiServerImplementation implements Runnable
             }
         }
     }
-    
+    /**
+     * method for deleting node from the record of connect state
+     * @param client the node to be deleted
+     */
     private void remove_client(Client client) //只是从record中删掉关联项
     {
         Iterator pointer = this.record.keySet().iterator();
@@ -347,7 +392,11 @@ class MultiServerImplementation implements Runnable
                 pointer.remove();
         }
     }
- 
+    /**
+     * the method duals with nat request
+     * @param info
+     * @param sock 
+     */
     private void pre_nat_request(Map<String, String> info, SocketUDT sock)
     {
         String destination = info.get("ID_target");
@@ -407,7 +456,7 @@ class MultiServerImplementation implements Runnable
     {
         String destination = info.get("ID_target");
         String ID_from = info.get("ID");
-        String IP_from = sock.getRemoteInetAddress().toString().split("/")[1];
+        String IP_from = sock.getRemoteInetAddress().getHostAddress();
         String port_from = sock.getRemoteInetPort() + "";
         Client client_from = find_client(ID_from);
         Client client_to = find_client(destination);
