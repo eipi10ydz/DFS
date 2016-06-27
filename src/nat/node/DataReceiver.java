@@ -20,7 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * 
  * @author 杨德中
  */
 public class DataReceiver implements Runnable
@@ -32,7 +32,13 @@ public class DataReceiver implements Runnable
     protected Map<Integer, String> pack;
     protected Timer timer;
     protected Node node;
-    
+    /**
+     * create a data receiver
+     * @param from the ID of starting node
+     * @param cnt the amount of the packages
+     * @param No the number of the package
+     * @param node the node itself
+     */
     public DataReceiver(String from, int cnt, int No, Node node)
     {
         this.node = node;
@@ -45,7 +51,7 @@ public class DataReceiver implements Runnable
     }
     
     /**
-     *
+     * receive data packages, if the packages are not complete in 60s, the node will ask the server to inform the starting node to resend.
      */
     @Override
     public void run()
@@ -79,13 +85,13 @@ public class DataReceiver implements Runnable
             res = res + this.pack.get(i);
         }
         ObjectInputStream oin = null;
-        Object obj = null;
+        Request obj = null;
         try 
         {
             //得到完整内容
             oin = new ObjectInputStream(new ByteArrayInputStream(res.getBytes(Charset.forName("ISO-8859-1"))));
-            obj = oin.readObject();
-            System.out.println(obj.toString().length());
+            obj = (Request)oin.readObject();
+            System.out.println(obj.getRequestType() + "\n" + obj.getRequestMethod() + "\n" + obj.getReplyTo());        
         } 
         catch (IOException ex) 
         {
