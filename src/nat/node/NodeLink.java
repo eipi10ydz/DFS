@@ -26,7 +26,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import jdk.nashorn.internal.parser.TokenType;
 
 /**
  *
@@ -39,10 +38,11 @@ public class NodeLink implements Runnable
     private final SocketUDT socket;
     private NetInputStreamUDT in;
     /**
-      * @param nodeID_peer
-      * @param socket
-      * @param node
+      * @param ID_p the ID of the socket's peer node
+      * @param socket the socket established
+      * @param node the node itself
     */
+    
     public NodeLink(String ID_p, SocketUDT socket, Node node) 
     {
         this.ID_p = ID_p;
@@ -50,11 +50,13 @@ public class NodeLink implements Runnable
         this.node = node;
         this.in = new NetInputStreamUDT(socket);
     }
+    
     /*
      * (non-Javadoc)
      * 
      * @see java.lang.Runnable#run()
      */
+    
     @Override
     public void run()
     {

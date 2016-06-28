@@ -3,7 +3,6 @@ package nodetest;
 import java.nio.charset.Charset;
 import java.util.List;
 import com.barchart.udt.ExceptionUDT;
-import com.barchart.udt.OptionUDT;
 import com.barchart.udt.SocketUDT;
 import com.barchart.udt.net.NetOutputStreamUDT;
 import java.io.IOException;
@@ -14,8 +13,15 @@ import java.util.logging.Logger;
  * @author lyx
  *
  */
-public class DataSender2 {
-	static public void Sender(Node node, String ID_p, List<String> packets) throws ExceptionUDT{
+class DataSender2 {
+    /**
+     * static method for sending packages
+     * @param node the node itself
+     * @param ID_p the ID of the destination
+     * @param packets list of packages to be send, the first package contains route info, and others contain data
+     * @throws ExceptionUDT failed to establish socket or send data
+     */
+	protected static void Sender(Node node, String ID_p, List<String> packets) throws ExceptionUDT{
 		SocketUDT sock = null;
                 NetOutputStreamUDT out = null;
             try {

@@ -19,12 +19,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Packer {
 	/**
-	 * @param Type
-	 * @param pac
-	 * @return
-	 * @throws NodeException
+	 * @param Type the type of the packages
+	 * @param pac the remaining contents of the packages
+	 * @return json of the package
+	 * @throws PackException the structure of the package is wrong
 	 */
-	static public String pack(String Type, Map<String, String> pac) throws PackException {
+	public static String pack(String Type, Map<String, String> pac) throws PackException {
 		Gson gson = new Gson();
 		String json = new String();
 		switch(Type){
@@ -129,13 +129,13 @@ public class Packer {
 } 
 	 */
 	/**
-	 * @param Type
-	 * @param Type_d
-	 * @param pac
-	 * @return
-	 * @throws NodeException
+	 * @param Type the tyoe of the package
+	 * @param Type_d the type_d of the package
+	 * @param pac the remaining contents of the package
+	 * @return json of the package
+	 * @throws PackException the structure of the package is wrong
 	 */
-	static public String pack(String Type, String Type_d, Map<String, String> pac) throws PackException {
+	public static String pack(String Type, String Type_d, Map<String, String> pac) throws PackException {
 		Gson gson = new Gson();
 		String json = new String();
 		switch(Type){
@@ -377,8 +377,13 @@ public class Packer {
 				return false;	
 		}
 	}
-	
-	static public Map<String, String> Check_table(String table) throws NodeException{
+	/**
+         * dual with package whose type is "NodeT"
+         * @param table the json of the package whose type is "NodeT"
+         * @return package
+         * @throws NodeException the structure of the package is wrong
+         */
+	public static Map<String, String> Check_table(String table) throws NodeException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new ConcurrentHashMap<String,String>();
@@ -411,7 +416,13 @@ public class Packer {
         }
     	return map;
 	}	
-	
+	/**
+         * dual with package whose type is "RoutD"
+         * @param RoutD the json of the package whose type is "RoutD"
+         * @param ID the ID of the starting node
+         * @return package
+         * @throws NodeException the structure of the package is wrong
+         */
 	static public Map<String, String> check_RoutD(String RoutD,String ID) throws NodeException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
@@ -506,10 +517,11 @@ public class Packer {
 
 	
 	/**
-	 * @param pac
-	 * @return
-	 * @throws NodeException
-	 */
+         * method for unpacking package
+         * @param pac json of the package to be unpacked
+         * @return package
+         * @throws PackException the package's json structure is wrong
+         */
 	static public Map<String, String> unpack(String pac) throws PackException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();

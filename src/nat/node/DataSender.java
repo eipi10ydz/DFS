@@ -31,9 +31,9 @@ class DataSender implements Callable<Boolean> {
 	private static final int block = 64 * 1024;
 
 	/**
-	 * @param node
-	 * @param destination
-	 * @param data
+	 * @param node the node itself
+	 * @param destination the ID of destination node
+	 * @param data the contents to be sent
 	 */
 	public DataSender(Node node, String destination, String data) {
 		this.node = node;
@@ -87,7 +87,12 @@ class DataSender implements Callable<Boolean> {
 		}
 		// return false;
 	}
-
+        /**
+         * ask server for route info in order to send packages
+         * @return route info from server
+         * @throws ExceptionUDT
+         * @throws NodeException 
+         */
 	private Map<String, String> ask_router_info() throws ExceptionUDT, NodeException {
 		byte arr[] = new byte[4096];
 		String str = null;
@@ -133,7 +138,11 @@ class DataSender implements Callable<Boolean> {
 		}
 		return pac;
 	}
-
+        /**
+         * 
+         * @param pac_routd01 route info from server
+         * @return 
+         */
 	private Boolean pack_send(Map<String, String> pac_routd01) {
 		String str = null;
 		Map<String, String> pac = null;

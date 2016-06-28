@@ -29,11 +29,7 @@ class LinkEstablisherThreadS2 implements Runnable {
 										Integer.parseInt(pac.get("Port")))) {
 									node.link_timers.remove(pac.get("ID"));
 								}
-							} catch (ExceptionUDT e) {
-								e.printStackTrace();
-							} catch (NodeException e) {
-								e.printStackTrace();
-							} catch (PackException e) {
+							} catch (ExceptionUDT | NodeException | PackException | IllegalArgumentException e) {
 								e.printStackTrace();
 							}
 						} else if (pac.get("type_d").equals("07")) {

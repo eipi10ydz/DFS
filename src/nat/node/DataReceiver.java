@@ -73,7 +73,7 @@ public class DataReceiver implements Runnable
                 sock = new SocketUDT(TypeUDT.STREAM);
                 sock.connect(new InetSocketAddress(node.server_host, node.server_port));
                 sock.send(Packer.pack("DataR", info).getBytes(Charset.forName("ISO-8859-1")));
-            } 
+            }
             catch (ExceptionUDT | PackException ex) 
             {
                 Logger.getLogger(DataReceiver.class.getName()).log(Level.SEVERE, null, ex);

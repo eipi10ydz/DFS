@@ -12,7 +12,15 @@ import com.barchart.udt.TypeUDT;
  *
  */
 public class InfoSender {
-	static void Info_send(Node node,String ID, String ID_target,SocketUDT socket) throws ExceptionUDT{//socket  两个节点ID给 
+    /**
+     * static method for sending RTT, bandwidth and lost rate to server
+     * @param node the node itself
+     * @param ID the ID of itself
+     * @param ID_target the ID of the socket's peer node
+     * @param socket the socket to get info
+     * @throws ExceptionUDT failed to established socket
+     */
+    public static void Info_send(Node node,String ID, String ID_target,SocketUDT socket) throws ExceptionUDT{//socket  两个节点ID给 
 			String str = new String();
 			SocketUDT server = new SocketUDT(TypeUDT.STREAM);
 			server.setBlocking(true);

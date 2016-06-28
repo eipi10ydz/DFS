@@ -75,15 +75,15 @@ public class Node {
 	protected ExecutorService data_to_send;
 
 	/**
-	 * @param user_name
-	 * @param server_host
-	 * @param server_port
-	 * @throws ExceptionUDT
-	 * @throws NodeException
-	 * @throws PackException
+	 * @param user_name the user name of the node
+	 * @param server_host the IP address of the server
+	 * @param server_port the port of the server
+	 * @throws ExceptionUDT failed to create socket with server and transfer message
+	 * @throws NodeException the structure of the package is wrong
+	 * @throws PackException the structure of the package is wrong
 	 */
 	public Node(String user_name, String server_host, int server_port)
-			throws ExceptionUDT, PackException, NodeException {
+        			throws ExceptionUDT, PackException, NodeException {
 		this.user_name = user_name;
                 this.data_receiver = new ConcurrentHashMap<>();
                 this.data_resend = new ConcurrentHashMap<>();
@@ -171,8 +171,9 @@ public class Node {
 	}
 
 	/**
-	 * @param length
-	 * @param arr
+         * static method to empty the array after received info
+	 * @param length the info's length
+	 * @param arr the array that received info
 	 */
 	protected static void empty_arr(int length, byte arr[]) {
 		for (int i = 0; i < length; i++) {
@@ -195,10 +196,11 @@ public class Node {
 	 */
 
 	/**
-	 * @param obj
-	 * @param peer
-	 * @return result
-	 * @throws IOException
+         * method to transfer data between nodes
+	 * @param obj object that implements Serializable interface and to be sent
+	 * @param peer the user name of the destination
+	 * @return result true stands for transfer success
+	 * @throws IOException object doesn't implement Serializable interface
 	 */
 	public Future<Boolean> transfer_message(Object obj, String peer) throws IOException {
 		if (obj == null) {

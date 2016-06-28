@@ -1,6 +1,6 @@
 package nodetest;
 
-public class NodeException extends Exception {
+        class NodeException extends Exception {
 	/**
 	 * 
 	 */

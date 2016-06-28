@@ -54,7 +54,7 @@ class LinkEstablisher {
 				try {
 					str = Packer.pack("LinkE", "04", pac);
 				} catch (PackException e) {// just used for debug
-					e.printStackTrace();
+//					e.printStackTrace();
                                         return null;
 				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
@@ -71,8 +71,8 @@ class LinkEstablisher {
                                 str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 				Node.empty_arr(str.length(), arr);
 				pac = Packer.unpack(str);
-                                if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+                                if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
 					throw new NodeException("Unexpected packet from the peer node.");
 				}
@@ -88,8 +88,8 @@ class LinkEstablisher {
 				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 				Node.empty_arr(str.length(), arr);
 				pac = Packer.unpack(str);
-				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
 					throw new NodeException("Unexpected packet from the peer node.");
 				}
@@ -98,7 +98,7 @@ class LinkEstablisher {
 				try {
 					str = Packer.pack("LinkE", "04", pac);
 				} catch (PackException e) {// just used for debug
-					e.printStackTrace();
+//					e.printStackTrace();
                                         return null;
 				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
@@ -107,7 +107,7 @@ class LinkEstablisher {
 				try {
 					Thread.sleep(1000);//tricky
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+//					e.printStackTrace();
 					Thread.currentThread().interrupt();
 				}
 				return sock;
@@ -116,7 +116,7 @@ class LinkEstablisher {
 					sock.close();
                                 } catch (ExceptionUDT e1) {
                                 }
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 			// direct connect from the peer
 			SocketUDT server = null;
@@ -151,7 +151,7 @@ class LinkEstablisher {
 				try {
 					str = Packer.pack("LinkE", "08", pac);
 				} catch (PackException e) {// just used for debug
-					e.printStackTrace();
+//					e.printStackTrace();
 				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
@@ -165,7 +165,7 @@ class LinkEstablisher {
 				try {
 					str = Packer.pack("LinkE", "04", pac);
 				} catch (PackException e) {// just used for debug
-					e.printStackTrace();
+//					e.printStackTrace();
 				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
@@ -174,8 +174,8 @@ class LinkEstablisher {
 				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 				Node.empty_arr(str.length(), arr);
 				pac = Packer.unpack(str);
-				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
 					throw new NodeException("Unexpected packet from the peer node.");
 				}
@@ -186,7 +186,7 @@ class LinkEstablisher {
 					Thread.currentThread().interrupt();
 				}
 				return sock;
-			} catch (ExceptionUDT | NodeException | PackException e) {
+			} catch (ExceptionUDT | NodeException | PackException | IllegalArgumentException e) {
 				try {
 					sock.close();
 				} catch (ExceptionUDT e1) {
@@ -195,7 +195,7 @@ class LinkEstablisher {
                                 {
                                 
                                 }
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 			// traverse
 			server = new SocketUDT(TypeUDT.STREAM);
@@ -244,7 +244,7 @@ class LinkEstablisher {
 					try {
 						str = Packer.pack("LinkE", "04", pac);
 					} catch (PackException e) {// just used for debug
-						e.printStackTrace();
+//						e.printStackTrace();
 					}
 					sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																			// packet
@@ -253,25 +253,25 @@ class LinkEstablisher {
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 					Node.empty_arr(str.length(), arr);
 					pac = Packer.unpack(str);
-					if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-							&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-							&& pac.get("ID").equals(ID_p))) {
+					if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+						&& pac.get("ID").equals(ID_p))) {
 						try {
 							sock.close();
-						} catch (ExceptionUDT e1) {
-							e1.printStackTrace();
+						} catch (ExceptionUDT | NullPointerException e1) {
+//							e1.printStackTrace();
                                                 //      sock has been closed...    
 						}
 						throw new NodeException("Unexpected packet from the peer node.");
 					}
 				} catch (ExceptionUDT e) {
-					e.printStackTrace();
+//					e.printStackTrace();
                                     //nat traversal failed...
 					tell_server(ID_p, false);
 					return null;
 				}
 				tell_server(ID_p, true);
-			} catch (ExceptionUDT e) {
+			} catch (ExceptionUDT | IllegalArgumentException e) {
 				try {
 					sock.close();
                                         return null;
@@ -285,7 +285,7 @@ class LinkEstablisher {
 				try {
 					server.close();
 				} catch (ExceptionUDT e) {
-					e.printStackTrace();
+//					e.printStackTrace();
 				}
 			}
 			try {
@@ -321,7 +321,7 @@ class LinkEstablisher {
 		try {
 			str = Packer.pack("LinkE", "04", pac);
 		} catch (PackException e) {// just used for debug
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		try {
 			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
@@ -338,9 +338,9 @@ class LinkEstablisher {
 			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 			Node.empty_arr(str.length(), arr);
 			pac = Packer.unpack(str);
-			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-					&& pac.get("ID").equals(ID_p))) {
+                        if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+						&& pac.get("ID").equals(ID_p))) {
 				try {
 					sock.close();
 				} catch (ExceptionUDT e1) {
@@ -348,7 +348,7 @@ class LinkEstablisher {
 				}
 				throw new NodeException("Unexpected packet from the peer node.");
 			}
-		} catch (ExceptionUDT | PackException e) {
+		} catch (ExceptionUDT | PackException | IllegalArgumentException e) {
 //			e.printStackTrace();
 			try {
 				sock.close();
@@ -420,7 +420,7 @@ class LinkEstablisher {
 				try {
 					str = Packer.pack("LinkE", "04", pac);
 				} catch (PackException e) {// just used for debug
-					e.printStackTrace();
+//					e.printStackTrace();
 				}
 				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
@@ -429,34 +429,35 @@ class LinkEstablisher {
 				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 				Node.empty_arr(str.length(), arr);
 				pac = Packer.unpack(str);
-				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-						&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+                                System.out.println(str);
+				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
 					try {
 						sock.close();
-					} catch (ExceptionUDT e1) {
-						e1.printStackTrace();
+					} catch (ExceptionUDT | NullPointerException e1) {
+//						e1.printStackTrace();
 					}
 					throw new NodeException("Unexpected packet from the peer node.");
 				}
 			} catch (ExceptionUDT e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				tell_server(ID_p, false);
 				return false;
 			}
 			tell_server(ID_p, true);
-		} catch (ExceptionUDT e) {
+		} catch (ExceptionUDT | IllegalArgumentException e) {
 			try {
 				server.close();
 			} catch (ExceptionUDT e1) {
-				e1.printStackTrace();
+//				e1.printStackTrace();
 			}
 			throw e;
 		} catch (PackException e) {
 			try {
 				server.close();
 			} catch (ExceptionUDT e1) {
-				e1.printStackTrace();
+//				e1.printStackTrace();
 			}
 			throw e;
 		}
@@ -479,7 +480,7 @@ class LinkEstablisher {
 			try {
 				str = Packer.pack("LinkE", "08", pac);
 			} catch (PackException e) {// just used for debug
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 			sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																	// packet
@@ -488,9 +489,9 @@ class LinkEstablisher {
 			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 			Node.empty_arr(str.length(), arr);
 			pac = Packer.unpack(str);
-			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("08")
-					&& pac.get("ID").equals(ID_p))) {
+			if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("08")
+						&& pac.get("ID").equals(ID_p))) {
 				throw new NodeException("Unexpected packet from the peer node.");
 			}
 			InetSocketAddress local_address = sock.getLocalSocketAddress();
@@ -505,9 +506,9 @@ class LinkEstablisher {
 			str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 			Node.empty_arr(str.length(), arr);
 			pac = Packer.unpack(str);
-                        if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")
-					&& pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
-					&& pac.get("ID").equals(ID_p))) {
+                        if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
+						&& pac.get("ID").equals(ID_p))) {
 				throw new NodeException("Unexpected packet from the peer node.");
 			}
                         pac = new ConcurrentHashMap<String, String>();
@@ -515,12 +516,12 @@ class LinkEstablisher {
 			try {
                             str = Packer.pack("LinkE", "04", pac);
 			} catch (PackException e) {// just used for debug
-                            e.printStackTrace();
+//                            e.printStackTrace();
 			}
                         sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																	// packet
 																	// LinkE04
-		} catch (ExceptionUDT | NodeException | PackException e) {
+		} catch (ExceptionUDT | NodeException | PackException | IllegalArgumentException e) {
 		//	e.printStackTrace();
 			try {
 				sock.close();
@@ -565,7 +566,7 @@ class LinkEstablisher {
 			try {
 				server.close();
 			} catch (ExceptionUDT e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 		return;
