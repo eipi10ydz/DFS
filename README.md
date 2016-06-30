@@ -9,11 +9,11 @@
 - make help
 
 ## Run
-###Windows
+### Windows
 - java -cp lib/*;build/classes/node nodetest.NodeTest
 - java -cp lib/*;build/classes/server server.MainClass
 
-###linux
+### Linux
 - java -cp build/classes/node/:lib/* nodetest.NodeTest
 - java -cp build/classes/server/:lib/* server.MainClass
 
