@@ -62,17 +62,25 @@ class DataSender implements Callable<Boolean> {
 		try {
 			while(true)
                         {
-                            pac = ask_router_info();
+                            try 
+                            {
+                                pac = ask_router_info();
+                            } 
+                            catch (ExceptionUDT e) 
+                            {
+                                continue;
+                            }
                             if(pac != null)
                                 break;
                         }
 		} catch (NodeException e) {
 			e.printStackTrace();
 			return false;// TODO retry?
-		} catch (ExceptionUDT e) {
-			e.printStackTrace();
-			return false;
-		}
+		} 
+//                catch (ExceptionUDT e) {
+//			e.printStackTrace();
+//			return false;
+//		}
 		pack_send(pac);
 		while (true) {
                     	if (finished_list.contains(No1)) {

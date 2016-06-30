@@ -217,6 +217,7 @@ class LinkEstablisher {
 																			// LinkE01
 				server.receive(arr);// receive packet LinkE03
 				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
+                                System.out.println(str);
 				Node.empty_arr(str.length(), arr);
 				pac = Packer.unpack(str);
 				InetSocketAddress local_address = server.getLocalSocketAddress();
@@ -246,14 +247,15 @@ class LinkEstablisher {
 					} catch (PackException e) {// just used for debug
 //						e.printStackTrace();
 					}
-					sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+//					sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																			// packet
 																			// LinkE04
 					sock.receive(arr);// receive packet LinkE04
 					str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 					Node.empty_arr(str.length(), arr);
 					pac = Packer.unpack(str);
-					if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                        if((pac == null) && (sock != null));
+                                        else if (pac != null || !(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
                                         !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
 						try {
@@ -271,7 +273,7 @@ class LinkEstablisher {
 					return null;
 				}
 				tell_server(ID_p, true);
-			} catch (ExceptionUDT | IllegalArgumentException e) {
+			} catch (ExceptionUDT | IllegalArgumentException | NodeException e) {
 				try {
 					sock.close();
                                         return null;
@@ -407,6 +409,7 @@ class LinkEstablisher {
 			InetSocketAddress local_address = server.getLocalSocketAddress();
 			server.close();
 			sock.bind(local_address);
+                        sock.setBlocking(true);
 			sock.setRendezvous(true);
 			try {
 				sock.connect(new InetSocketAddress(IP_p, Port_p));
@@ -415,22 +418,22 @@ class LinkEstablisher {
                                     sock.send(" ".getBytes());
                                     System.out.println("connect success");
                                 }
-                                pac = new ConcurrentHashMap<String, String>();
+                                pac = new ConcurrentHashMap<>();
 				pac.put("ID", node.ID);
 				try {
 					str = Packer.pack("LinkE", "04", pac);
 				} catch (PackException e) {// just used for debug
 //					e.printStackTrace();
 				}
-				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
+//				sock.send(str.getBytes(Charset.forName("ISO-8859-1")));// send
 																		// packet
 																		// LinkE04
 				sock.receive(arr);// receive packet LinkE04
 				str = new String(arr, Charset.forName("ISO-8859-1")).trim();
 				Node.empty_arr(str.length(), arr);
 				pac = Packer.unpack(str);
-                                System.out.println(str);
-				if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
+                                if((pac == null) && (sock != null));
+                                else if (!(pac.containsKey("type") && pac.containsKey("type_d") && pac.containsKey("ID")) || 
                                         !(pac.get("type").equals("LinkE") && pac.get("type_d").equals("04")
 						&& pac.get("ID").equals(ID_p))) {
 					try {
@@ -461,8 +464,12 @@ class LinkEstablisher {
 			}
 			throw e;
 		}
-		Thread t = new Thread(new NodeLink(ID_p, sock, node));
-		t.start();
+                try {
+                    Thread t = new Thread(new NodeLink(ID_p, sock, node));
+                    t.start();
+		} catch (java.nio.channels.IllegalBlockingModeException e) {
+                    return false;
+                }
 		return true;
 	}
 

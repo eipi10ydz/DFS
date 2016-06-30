@@ -522,7 +522,8 @@ public class Packer {
          * @return package
          * @throws PackException the package's json structure is wrong
          */
-	static public Map<String, String> unpack(String pac) throws PackException{
+	static public Map<String, String> unpack(String pac)
+                throws PackException{
 		Gson gson = new Gson();
 		Type t = new TypeToken<Map<String, String>>(){}.getType();
 		Map<String, String> map = new ConcurrentHashMap<String,String>();
