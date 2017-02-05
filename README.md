@@ -1,10 +1,21 @@
 # Implementation of cross-platform NAT Traversal and data transfer interface  
 
+## This is Our OS Project implemented by
+- Dezhong Yang(me)
+- [Zhengyang Wang](https://github.com/wzy9607)
+- Yaxi Li
+- [Xiao Su](https://github.com/sugarshaw95)
+
+## based on
+- [barchart-udt](https://github.com/barchart/barchart-udt)
+- [gson](https://github.com/google/gson)
+- [httpclient](http://hc.apache.org/httpcomponents-client-ga/index.html)
+
 ## Requirements
 - Java SE 8
 
 ## Configuration
-- git clone https://git.ustclug.org/eipi10/DFS.git
+- git clone https://github.com/eipi10ydz/DFS.git
 - cd DFS
 - make help
 
